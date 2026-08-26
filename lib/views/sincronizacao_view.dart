@@ -74,28 +74,34 @@ class SincronizacaoView extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Instruções
+          // Instruções Google Drive
           _Secao(
-            titulo: 'Como sincronizar com outros dispositivos',
+            titulo: 'Sincronizar via Google Drive',
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: const [
                 _Instrucao(
                   numero: '1',
                   texto:
-                      'Coloque o biblioteca.txt em um serviço de nuvem (Google Drive, Dropbox, etc.).',
+                      'No computador, mova o biblioteca.txt para a pasta do Google Drive e aguarde sincronizar.',
                 ),
                 SizedBox(height: 10),
                 _Instrucao(
                   numero: '2',
                   texto:
-                      'Aqui no Android, toque em "Selecionar arquivo" e aponte para esse arquivo na nuvem.',
+                      'No app Google Drive do Android, encontre o biblioteca.txt, toque em ⋮ e selecione "Tornar disponível offline".',
+                ),
+                SizedBox(height: 10),
+                _Instrucao(
+                  numero: '3',
+                  texto:
+                      'Aqui em Sincronização, toque em "Selecionar arquivo", navegue até Drive no menu lateral e selecione o biblioteca.txt.',
                 ),
                 SizedBox(height: 10),
                 _Instrucao(
                   numero: '↺',
                   texto:
-                      'Antes de editar, toque em "Recarregar" para garantir que está com a versão mais recente.',
+                      'Antes de editar, toque em "Recarregar" se alterou a base em outro dispositivo. Evite editar simultaneamente em dois lugares.',
                 ),
               ],
             ),
