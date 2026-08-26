@@ -1,0 +1,40 @@
+name: biblioteca
+description: Gestão de biblioteca pessoal — iOS e Android.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Estado
+  provider: ^6.1.2
+
+  # HTTP (busca ISBN)
+  http: ^1.2.1
+
+  # Persistência de preferências (arquivo vinculado)
+  shared_preferences: ^2.3.1
+
+  # Scanner de código de barras
+  mobile_scanner: ^5.2.3
+
+  # Seletor de arquivo (Storage Access Framework no Android)
+  file_picker: ^8.1.2
+
+  # Links clicáveis nos comentários
+  url_launcher: ^6.3.0
+
+  # Ícones
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
