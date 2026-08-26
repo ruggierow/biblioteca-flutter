@@ -49,6 +49,8 @@ class HomeView extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       backgroundColor: bibAccent,
+                      disabledBackgroundColor: bibAccent.withOpacity(0.55),
+                      disabledForegroundColor: Colors.white.withOpacity(0.7),
                     ),
                   ),
                 ),

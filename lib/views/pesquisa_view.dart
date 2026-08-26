@@ -31,61 +31,50 @@ class _PesquisaViewState extends State<PesquisaView> {
         : '${filtrados.length} ${filtrados.length == 1 ? 'livro encontrado' : 'livros encontrados'}';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pesquisa'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(56),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      appBar: AppBar(title: const Text('Pesquisa')),
+      body: Column(
+        children: [
+          // Campo de busca no corpo — teclado funciona corretamente
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: TextField(
               controller: _buscaCtrl,
+              autofocus: false,
               onChanged: (v) => setState(() => _busca = v),
-              style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 hintText: 'Buscar por título, autor, tema, ano ou status…',
-                hintStyle: const TextStyle(color: Colors.white60),
-                prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                prefixIcon: const Icon(Icons.search, color: bibPrimary),
                 suffixIcon: _busca.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white70),
+                        icon: const Icon(Icons.clear),
                         onPressed: () =>
                             setState(() { _buscaCtrl.clear(); _busca = ''; }),
                       )
                     : null,
-                filled: true,
-                fillColor: Colors.white.withOpacity(0.2),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none),
-                contentPadding: const EdgeInsets.symmetric(vertical: 8),
               ),
             ),
           ),
-        ),
-      ),
-      body: filtrados.isEmpty
-          ? Center(
-              child: Text(
-                _busca.isEmpty
-                    ? 'Nenhum livro cadastrado'
-                    : 'Nenhum resultado',
-                style: const TextStyle(color: bibMuted, fontSize: 16),
+          if (filtrados.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(contagem,
+                    style: const TextStyle(
+                        color: bibMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600)),
               ),
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text(contagem,
-                      style: const TextStyle(
-                          color: bibMuted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600)),
-                ),
-                Expanded(
-                  child: ListView.separated(
+            ),
+          Expanded(
+            child: filtrados.isEmpty
+                ? Center(
+                    child: Text(
+                      _busca.isEmpty ? 'Nenhum livro cadastrado' : 'Nenhum resultado',
+                      style: const TextStyle(color: bibMuted, fontSize: 16),
+                    ),
+                  )
+                : ListView.separated(
                     itemCount: filtrados.length,
                     separatorBuilder: (_, __) =>
                         const Divider(height: 1, indent: 16),
@@ -105,16 +94,13 @@ class _PesquisaViewState extends State<PesquisaView> {
                             context: context,
                             builder: (ctx) => AlertDialog(
                               title: const Text('Remover livro'),
-                              content: Text(
-                                  'Remover "${livro.titulo}" da biblioteca?'),
+                              content: Text('Remover "${livro.titulo}" da biblioteca?'),
                               actions: [
                                 TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(ctx, false),
+                                    onPressed: () => Navigator.pop(ctx, false),
                                     child: const Text('Cancelar')),
                                 TextButton(
-                                    onPressed: () =>
-                                        Navigator.pop(ctx, true),
+                                    onPressed: () => Navigator.pop(ctx, true),
                                     child: const Text('Remover',
                                         style: TextStyle(color: bibDanger))),
                               ],
@@ -126,11 +112,9 @@ class _PesquisaViewState extends State<PesquisaView> {
                         child: ListTile(
                           title: Text(livro.titulo,
                               style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: bibText)),
+                                  fontWeight: FontWeight.w600, color: bibText)),
                           subtitle: _subtitulo(livro),
-                          trailing: const Icon(Icons.chevron_right,
-                              color: bibMuted),
+                          trailing: const Icon(Icons.chevron_right, color: bibMuted),
                           onTap: () => Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -140,9 +124,9 @@ class _PesquisaViewState extends State<PesquisaView> {
                       );
                     },
                   ),
-                ),
-              ],
-            ),
+          ),
+        ],
+      ),
     );
   }
 
