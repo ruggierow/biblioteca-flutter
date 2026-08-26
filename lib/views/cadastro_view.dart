@@ -64,10 +64,10 @@ class _CadastroViewState extends State<CadastroView> {
     _grupoLiteratura = l.grupoLiteratura;
     _autoresCtrl = l.autores.isEmpty
         ? [TextEditingController()]
-        : l.autores.map(TextEditingController.fromValue).toList().cast();
+        : l.autores.map((s) => TextEditingController(text: s)).toList();
     _temasCtrl = l.temas.isEmpty
         ? [TextEditingController()]
-        : l.temas.map(TextEditingController.fromValue).toList().cast();
+        : l.temas.map((s) => TextEditingController(text: s)).toList();
   }
 
   @override
@@ -371,10 +371,10 @@ class _CadastroViewState extends State<CadastroView> {
         setState(() {
           if (r.titulo.isNotEmpty) _tituloCtrl.text = r.titulo;
           if (r.autores.isNotEmpty) {
-            _autoresCtrl = r.autores.map(TextEditingController.fromValue).toList().cast();
+            _autoresCtrl = r.autores.map((s) => TextEditingController(text: s)).toList();
           }
           if (r.temas.isNotEmpty) {
-            _temasCtrl = r.temas.map(TextEditingController.fromValue).toList().cast();
+            _temasCtrl = r.temas.map((s) => TextEditingController(text: s)).toList();
           }
           if (r.ano.isNotEmpty) _anoCtrl.text = r.ano;
           if (r.comentarios.isNotEmpty && _comentariosCtrl.text.trim().isEmpty) {

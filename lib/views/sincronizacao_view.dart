@@ -131,12 +131,12 @@ class SincronizacaoView extends StatelessWidget {
 
   Future<void> _selecionarArquivo(
       BuildContext context, BibliotecaStore store) async {
-    final result = await FilePicker.platform.pickFiles(
+    final arquivo = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: ['txt'],
     );
-    if (result != null && result.files.single.path != null) {
-      await store.vincularArquivo(result.files.single.path!);
+    if (arquivo?.path != null) {
+      await store.vincularArquivo(arquivo!.path!);
     }
   }
 }
@@ -158,15 +158,18 @@ class _Secao extends StatelessWidget {
                 color: bibMuted,
                 letterSpacing: 0.8)),
         const SizedBox(height: 8),
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: bibBorder),
+        Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: bibBorder),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: child,
           ),
-          padding: const EdgeInsets.all(16),
-          child: child,
         ),
       ],
     );

@@ -219,27 +219,27 @@ class _Card extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.92),
-        borderRadius: BorderRadius.circular(12),
+    return Material(
+      color: Colors.white.withOpacity(0.92),
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: titulo == null
+            ? child
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(titulo!,
+                      style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: bibMuted,
+                          letterSpacing: 0.5)),
+                  const SizedBox(height: 8),
+                  child,
+                ],
+              ),
       ),
-      padding: const EdgeInsets.all(16),
-      child: titulo == null
-          ? child
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(titulo!,
-                    style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: bibMuted,
-                        letterSpacing: 0.5)),
-                const SizedBox(height: 8),
-                child,
-              ],
-            ),
     );
   }
 }
