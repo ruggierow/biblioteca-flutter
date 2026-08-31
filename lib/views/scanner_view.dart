@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../theme.dart';
 
 class ScannerView extends StatefulWidget {
@@ -29,6 +30,14 @@ class _ScannerViewState extends State<ScannerView> {
         children: [
           MobileScanner(
             controller: _ctrl,
+            errorBuilder: (context, error) {
+              if (error.errorCode == MobileScannerErrorCode.permissionDenied) {
+                return const _PermissaoNegada();
+              }
+              return _ErroCamara(
+                mensagem: error.errorDetails?.message ?? 'Erro ao acessar câmera',
+              );
+            },
             onDetect: (capture) {
               if (_escaneado) return;
               final codigo = capture.barcodes.firstOrNull?.rawValue;
@@ -57,7 +66,8 @@ class _ScannerViewState extends State<ScannerView> {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(8),
@@ -86,6 +96,102 @@ class _ScannerViewState extends State<ScannerView> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PermissaoNegada extends StatelessWidget {
+  const _PermissaoNegada();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.no_photography_outlined,
+                color: Colors.white54, size: 72),
+            const SizedBox(height: 20),
+            const Text(
+              'Acesso à câmera negado',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Para escanear códigos de barras, permita o acesso à câmera nas configurações do dispositivo.',
+              style: TextStyle(color: Colors.white70, fontSize: 14),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 28),
+            ElevatedButton.icon(
+              onPressed: () => openAppSettings(),
+              icon: const Icon(Icons.settings_outlined),
+              label: const Text('Abrir Configurações'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: bibPrimary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24, vertical: 12),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar',
+                  style: TextStyle(color: Colors.white54)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ErroCamara extends StatelessWidget {
+  final String mensagem;
+  const _ErroCamara({required this.mensagem});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.camera_alt_outlined,
+                color: Colors.white54, size: 72),
+            const SizedBox(height: 20),
+            const Text(
+              'Câmera indisponível',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              mensagem,
+              style:
+                  const TextStyle(color: Colors.white70, fontSize: 13),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Voltar',
+                  style: TextStyle(color: Colors.white54)),
+            ),
+          ],
+        ),
       ),
     );
   }
