@@ -1,15 +1,37 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/livro.dart';
+import '../services/foto_service.dart';
 import '../theme.dart';
 import 'cadastro_view.dart';
 
-class DetalheView extends StatelessWidget {
+class DetalheView extends StatefulWidget {
   final Livro livro;
   const DetalheView({super.key, required this.livro});
 
   @override
+  State<DetalheView> createState() => _DetalheViewState();
+}
+
+class _DetalheViewState extends State<DetalheView> {
+  Uint8List? _capa;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarCapa();
+  }
+
+  Future<void> _carregarCapa() async {
+    final bytes = await FotoService.shared
+        .carregar(livroId: widget.livro.fotoId);
+    if (bytes != null && mounted) setState(() => _capa = bytes);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final livro = widget.livro;
     return Scaffold(
       appBar: AppBar(
         title: Text(livro.titulo, overflow: TextOverflow.ellipsis),
@@ -28,6 +50,10 @@ class DetalheView extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Foto da capa
+          _CapaSection(capa: _capa),
+          const SizedBox(height: 12),
+
           _Secao(
             titulo: 'Identificação',
             child: Column(
@@ -97,6 +123,40 @@ class DetalheView extends StatelessWidget {
               child: _ComentariosView(texto: livro.comentarios),
             ),
           ],
+        ],
+      ),
+    );
+  }
+}
+
+class _CapaSection extends StatelessWidget {
+  final Uint8List? capa;
+  const _CapaSection({required this.capa});
+
+  @override
+  Widget build(BuildContext context) {
+    if (capa != null) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.memory(capa!,
+            width: double.infinity,
+            fit: BoxFit.contain),
+      );
+    }
+    // Placeholder para livros sem foto
+    return Container(
+      height: 150,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF2F2F7),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.menu_book_rounded, size: 52, color: Color(0xFF2B5FB3)),
+          SizedBox(height: 8),
+          Text('Sem foto da capa',
+              style: TextStyle(fontSize: 12, color: Colors.black45)),
         ],
       ),
     );

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../models/biblioteca_store.dart';
 import '../models/livro.dart';
+import '../services/foto_service.dart';
 import '../services/isbn_service.dart';
+import '../services/permissoes.dart';
+import 'permissao_negada_view.dart';
 import '../theme.dart';
+import 'capa_camera_view.dart';
 import 'scanner_view.dart';
 
 class CadastroView extends StatefulWidget {
@@ -32,15 +37,30 @@ class _CadastroViewState extends State<CadastroView> {
   bool _buscandoISBN = false;
   String _isbnStatus = '';
   bool _isbnSucesso = false;
+  bool _mostrarCampoISBN = false;
+  final _isbnFocus = FocusNode();
+
+  Uint8List? _fotaNova;
+  Uint8List? _fotoExistente;
+  bool _fotoRemovida = false;
+
+  Uint8List? get _fotoAtual {
+    if (_fotoRemovida) return null;
+    return _fotaNova ?? _fotoExistente;
+  }
 
   bool get _editando => widget.livroEditando != null;
 
   @override
   void initState() {
     super.initState();
-    if (_editando) _preencherParaEdicao();
+    if (_editando) {
+      _preencherParaEdicao();
+      _carregarFotoExistente();
+    }
     if (widget.isbnInicial != null && widget.isbnInicial!.isNotEmpty) {
       _isbnCtrl.text = widget.isbnInicial!;
+      _mostrarCampoISBN = true;
       WidgetsBinding.instance.addPostFrameCallback((_) => _buscarISBN());
     }
   }
@@ -51,7 +71,14 @@ class _CadastroViewState extends State<CadastroView> {
         ..._autoresCtrl, ..._temasCtrl]) {
       c.dispose();
     }
+    _isbnFocus.dispose();
     super.dispose();
+  }
+
+  Future<void> _carregarFotoExistente() async {
+    final bytes = await FotoService.shared
+        .carregar(livroId: widget.livroEditando!.fotoId);
+    if (bytes != null && mounted) setState(() => _fotoExistente = bytes);
   }
 
   void _preencherParaEdicao() {
@@ -97,41 +124,58 @@ class _CadastroViewState extends State<CadastroView> {
                 Row(
                   children: [
                     Expanded(
-                      child: TextField(
-                        controller: _isbnCtrl,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                        decoration: const InputDecoration(
-                          labelText: 'ISBN (10 ou 13 dígitos)',
+                      child: TextButton.icon(
+                        onPressed: () {
+                          setState(() => _mostrarCampoISBN = !_mostrarCampoISBN);
+                          if (_mostrarCampoISBN) {
+                            WidgetsBinding.instance.addPostFrameCallback(
+                                (_) => _isbnFocus.requestFocus());
+                          }
+                        },
+                        icon: const Icon(Icons.keyboard_alt_outlined),
+                        label: const Text('Digitar ISBN'),
+                        style: TextButton.styleFrom(
+                          alignment: Alignment.centerLeft,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 8),
                     IconButton(
                       icon: const Icon(Icons.barcode_reader, color: bibPrimary),
                       onPressed: () => _abrirScanner(context),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed:
-                        _buscandoISBN || _isbnCtrl.text.trim().isEmpty
+                if (_mostrarCampoISBN) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _isbnCtrl,
+                          focusNode: _isbnFocus,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          decoration: const InputDecoration(
+                            labelText: 'ISBN (10 ou 13 dígitos)',
+                          ),
+                          onChanged: (_) => setState(() {}),
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: _buscandoISBN
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.search, color: bibPrimary),
+                        onPressed: _buscandoISBN || _isbnCtrl.text.trim().isEmpty
                             ? null
                             : _buscarISBN,
-                    icon: _buscandoISBN
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
-                        : const Icon(Icons.search),
-                    label:
-                        Text(_buscandoISBN ? 'Buscando…' : 'Buscar ISBN'),
+                      ),
+                    ],
                   ),
-                ),
+                ],
                 if (_isbnStatus.isNotEmpty) ...[
                   const SizedBox(height: 6),
                   Text(
@@ -143,6 +187,13 @@ class _CadastroViewState extends State<CadastroView> {
                 ],
               ],
             ),
+          ),
+          const SizedBox(height: 12),
+
+          // Foto da capa
+          _Secao(
+            titulo: 'Foto da capa',
+            child: _buildFotoSection(),
           ),
           const SizedBox(height: 12),
 
@@ -291,6 +342,135 @@ class _CadastroViewState extends State<CadastroView> {
     );
   }
 
+  Widget _buildFotoSection() {
+    final foto = _fotoAtual;
+    if (foto != null) {
+      return Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.memory(foto,
+                height: 200,
+                width: double.infinity,
+                fit: BoxFit.contain),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              TextButton.icon(
+                icon: const Icon(Icons.camera_alt, color: bibPrimary),
+                label: const Text('Trocar',
+                    style: TextStyle(color: bibPrimary)),
+                onPressed: _capturarFoto,
+              ),
+              const SizedBox(width: 16),
+              TextButton.icon(
+                icon: const Icon(Icons.delete_outline, color: bibDanger),
+                label: const Text('Remover',
+                    style: TextStyle(color: bibDanger)),
+                onPressed: () => setState(() {
+                  _fotaNova = null;
+                  _fotoExistente = null;
+                  _fotoRemovida = true;
+                }),
+              ),
+            ],
+          ),
+        ],
+      );
+    }
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        icon: const Icon(Icons.camera_alt),
+        label: const Text('Fotografar capa'),
+        onPressed: _capturarFoto,
+        style: OutlinedButton.styleFrom(
+          foregroundColor: bibPrimary,
+          side: const BorderSide(color: bibPrimary),
+          padding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _capturarFoto() async {
+    final fonte = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: bibPrimary),
+              title: const Text('Câmera'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: bibPrimary),
+              title: const Text('Galeria'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (fonte == null) return;
+
+    // A camera precisa de permissao explicita. A galeria nao entra aqui: no
+    // Android 13+ o seletor do sistema dispensa permissao, e pedir uma que nao
+    // e necessaria so produziria uma recusa falsa. Ver `comum/permissoes.md`.
+    if (fonte == ImageSource.camera) {
+      final estado = await Permissoes.garantirCamera();
+      if (!estado.podeUsarCamera) {
+        if (!mounted) return;
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            fullscreenDialog: true,
+            builder: (ctx) => Scaffold(
+              backgroundColor: Colors.black,
+              body: PermissaoNegadaView(
+                uso: UsoDaCamera.capa,
+                estado: estado,
+                onCancelar: () => Navigator.pop(ctx),
+              ),
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: fonte,
+      maxWidth: 900,
+      maxHeight: 1200,
+      imageQuality: 75,
+    );
+    if (picked == null || !mounted) return;
+
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+
+    final usar = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) => ConfirmacaoCapaPage(bytes: bytes),
+      ),
+    );
+
+    if (usar == true && mounted) {
+      setState(() {
+        _fotaNova = bytes;
+        _fotoRemovida = false;
+      });
+    }
+  }
+
   Widget _buildTextField(TextEditingController ctrl, String label,
       {TextInputType tipo = TextInputType.text}) {
     return TextField(
@@ -330,7 +510,9 @@ class _CadastroViewState extends State<CadastroView> {
           .replaceAll('ç', 'c')
           .replaceAll('ñ', 'n');
 
-  void _salvar(BibliotecaStore store) {
+  void _salvar(BibliotecaStore store) async {
+    final idAnterior = widget.livroEditando?.fotoId;
+
     final autores = _autoresCtrl
         .map((c) => c.text.trim())
         .where((s) => s.isNotEmpty)
@@ -340,24 +522,39 @@ class _CadastroViewState extends State<CadastroView> {
         .where((s) => s.isNotEmpty)
         .toList();
 
-    final livro = (_editando ? widget.livroEditando! : Livro(id: UniqueKey().toString(), titulo: ''))
-        .copyWith(
-          titulo: _tituloCtrl.text.trim(),
-          autores: autores,
-          temas: temas,
-          ano: _anoCtrl.text.trim(),
-          comentarios: _comentariosCtrl.text,
-          local: _localCtrl.text.trim(),
-          emprestado: _emprestado,
-          grupoLiteratura: _grupoLiteratura,
-        );
+    final livro =
+        (_editando ? widget.livroEditando! : Livro(id: UniqueKey().toString(), titulo: ''))
+            .copyWith(
+              titulo: _tituloCtrl.text.trim(),
+              autores: autores,
+              temas: temas,
+              ano: _anoCtrl.text.trim(),
+              comentarios: _comentariosCtrl.text,
+              local: _localCtrl.text.trim(),
+              emprestado: _emprestado,
+              grupoLiteratura: _grupoLiteratura,
+            );
+
+    final idNovo = livro.fotoId;
+
+    if (_fotaNova != null) {
+      await FotoService.shared.salvar(_fotaNova!, livroId: idNovo);
+      if (idAnterior != null && idAnterior != idNovo) {
+        await FotoService.shared.remover(livroId: idAnterior);
+      }
+    } else if (_fotoRemovida) {
+      if (idAnterior != null) await FotoService.shared.remover(livroId: idAnterior);
+      await FotoService.shared.remover(livroId: idNovo);
+    } else if (idAnterior != null && idAnterior != idNovo) {
+      await FotoService.shared.migrar(idAntigo: idAnterior, idNovo: idNovo);
+    }
 
     if (_editando) {
       store.atualizar(livro);
     } else {
       store.adicionar(livro);
     }
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context);
   }
 
   Future<void> _buscarISBN() async {

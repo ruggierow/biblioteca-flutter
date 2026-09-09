@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:permission_handler/permission_handler.dart';
+import '../services/permissoes.dart';
 import '../theme.dart';
+import 'permissao_negada_view.dart';
 
 class ScannerView extends StatefulWidget {
   final ValueChanged<String> onScaneado;
@@ -12,18 +13,57 @@ class ScannerView extends StatefulWidget {
   State<ScannerView> createState() => _ScannerViewState();
 }
 
-class _ScannerViewState extends State<ScannerView> {
+class _ScannerViewState extends State<ScannerView>
+    with WidgetsBindingObserver {
   final _ctrl = MobileScannerController();
   bool _escaneado = false;
 
+  /// Nulo enquanto a permissão ainda não foi consultada.
+  EstadoPermissao? _permissao;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _verificarPermissao();
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _ctrl.dispose();
     super.dispose();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState estado) {
+    // Voltou das Configurações: reconsulta e abre a câmera se agora pode.
+    if (estado == AppLifecycleState.resumed) _verificarPermissao();
+  }
+
+  /// Consulta — e pede, na primeira vez — a permissão de câmera.
+  /// Comportamento especificado em `comum/permissoes.md`.
+  Future<void> _verificarPermissao() async {
+    if (_permissao?.podeUsarCamera == true) return;
+    final estado = await Permissoes.garantirCamera();
+    if (mounted) setState(() => _permissao = estado);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final permissao = _permissao;
+    if (permissao != null && !permissao.podeUsarCamera) {
+      return Scaffold(
+        backgroundColor: Colors.black,
+        body: PermissaoNegadaView(
+          uso: UsoDaCamera.scanner,
+          estado: permissao,
+          onDigitarISBN: () => Navigator.pop(context),
+          onCancelar: () => Navigator.pop(context),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
@@ -31,8 +71,15 @@ class _ScannerViewState extends State<ScannerView> {
           MobileScanner(
             controller: _ctrl,
             errorBuilder: (context, error) {
+              // Rede de seguranca: se o plugin recusar por permissao apesar da
+              // checagem acima, cai na mesma tela em vez de mostrar erro cru.
               if (error.errorCode == MobileScannerErrorCode.permissionDenied) {
-                return const _PermissaoNegada();
+                return PermissaoNegadaView(
+                  uso: UsoDaCamera.scanner,
+                  estado: EstadoPermissao.negada,
+                  onDigitarISBN: () => Navigator.pop(context),
+                  onCancelar: () => Navigator.pop(context),
+                );
               }
               return _ErroCamara(
                 mensagem: error.errorDetails?.message ?? 'Erro ao acessar câmera',
@@ -96,59 +143,6 @@ class _ScannerViewState extends State<ScannerView> {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _PermissaoNegada extends StatelessWidget {
-  const _PermissaoNegada();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.no_photography_outlined,
-                color: Colors.white54, size: 72),
-            const SizedBox(height: 20),
-            const Text(
-              'Acesso à câmera negado',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Para escanear códigos de barras, permita o acesso à câmera nas configurações do dispositivo.',
-              style: TextStyle(color: Colors.white70, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 28),
-            ElevatedButton.icon(
-              onPressed: () => openAppSettings(),
-              icon: const Icon(Icons.settings_outlined),
-              label: const Text('Abrir Configurações'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: bibPrimary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 12),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar',
-                  style: TextStyle(color: Colors.white54)),
-            ),
-          ],
-        ),
       ),
     );
   }
