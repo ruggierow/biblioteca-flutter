@@ -30,3 +30,7 @@ ios/Runner/GeneratedPluginRegistrant.*
 # chaves de assinatura — nunca versionar
 *.jks
 *.keystore
+
+# macOS
+.DS_Store
+**/.DS_Store
