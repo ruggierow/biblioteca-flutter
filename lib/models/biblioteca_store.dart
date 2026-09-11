@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/backup_automatico.dart';
 import '../services/documento_saf.dart';
 import 'livro.dart';
 
@@ -110,6 +111,8 @@ class BibliotecaStore extends ChangeNotifier {
   Future<void> salvar() async {
     final uri = arquivoUri;
     if (uri == null) return;
+    // Preserva o último estado bom antes da primeira gravação da sessão.
+    await BackupAutomatico.executar(uri);
     try {
       await DocumentoSaf.gravar(uri, serializar());
       ultimaGravacao = DateTime.now();
