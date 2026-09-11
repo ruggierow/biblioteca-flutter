@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
 import '../models/biblioteca_store.dart';
 import '../theme.dart';
 
@@ -19,7 +18,7 @@ class SincronizacaoView extends StatelessWidget {
           // Status do arquivo
           _Secao(
             titulo: 'Arquivo',
-            child: store.arquivoPath == null
+            child: store.arquivoNome == null
                 ? const Padding(
                     padding: EdgeInsets.symmetric(vertical: 4),
                     child: Text('Nenhum arquivo vinculado',
@@ -29,7 +28,7 @@ class SincronizacaoView extends StatelessWidget {
                     children: [
                       _InfoRow(
                           label: 'Selecionado',
-                          valor: store.arquivoPath!.split('/').last),
+                          valor: store.arquivoNome!),
                       _InfoRow(
                           label: 'Livros carregados',
                           valor: '${store.livros.length}'),
@@ -52,7 +51,7 @@ class SincronizacaoView extends StatelessWidget {
               children: [
                 ListTile(
                   leading: const Icon(Icons.folder_open, color: bibPrimary),
-                  title: Text(store.arquivoPath == null
+                  title: Text(store.arquivoNome == null
                       ? 'Selecionar biblioteca.txt'
                       : 'Trocar arquivo'),
                   onTap: () => _selecionarArquivo(context, store),
@@ -62,12 +61,12 @@ class SincronizacaoView extends StatelessWidget {
                 ListTile(
                   leading: const Icon(Icons.sync, color: bibPrimary),
                   title: const Text('Recarregar arquivo'),
-                  onTap: store.arquivoPath == null
+                  onTap: store.arquivoNome == null
                       ? null
                       : () => store.recarregarArquivo(),
                   contentPadding: EdgeInsets.zero,
-                  textColor: store.arquivoPath == null ? bibMuted : null,
-                  iconColor: store.arquivoPath == null ? bibMuted : null,
+                  textColor: store.arquivoNome == null ? bibMuted : null,
+                  iconColor: store.arquivoNome == null ? bibMuted : null,
                 ),
               ],
             ),
@@ -137,13 +136,9 @@ class SincronizacaoView extends StatelessWidget {
 
   Future<void> _selecionarArquivo(
       BuildContext context, BibliotecaStore store) async {
-    final arquivo = await FilePicker.pickFile(
-      type: FileType.custom,
-      allowedExtensions: ['txt'],
-    );
-    if (arquivo?.path != null) {
-      await store.vincularArquivo(arquivo!.path!);
-    }
+    // Seletor do sistema (SAF). O file_picker devolvia o caminho de uma cópia
+    // no cache do app — o que se editava não voltava para o arquivo original.
+    await store.escolherEVincular();
   }
 }
 

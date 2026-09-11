@@ -1,48 +1,102 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/documento_saf.dart';
 import 'livro.dart';
 
 class BibliotecaStore extends ChangeNotifier {
   List<Livro> livros = [];
-  String? arquivoPath;
+
+  /// Nome visível do arquivo vinculado (ex.: "biblioteca.txt").
+  /// Null quando não há vínculo.
+  String? arquivoNome;
+
+  /// `content://` do documento, com permissão persistente do SAF.
+  String? arquivoUri;
+
   String? erroMensagem;
   DateTime? ultimaGravacao;
   DateTime? ultimaRecarga;
 
   static const _sep = ';';
-  static const _prefKey = 'bibliotecaFilePath';
+  static const _prefUri = 'bibliotecaDocUri';
+  static const _prefNome = 'bibliotecaDocNome';
+
+  /// Chave das versões até a 1.8.3, que guardava o caminho de uma CÓPIA no
+  /// cache do app. Não dá para converter num URI — só serve para detectar o
+  /// vínculo antigo, descartá-lo e pedir que o usuário escolha o arquivo de novo.
+  static const _prefLegado = 'bibliotecaFilePath';
 
   BibliotecaStore() {
     _restaurarArquivo();
   }
 
   // MARK: - Vínculo com arquivo
+  //
+  // O vínculo é um content:// com permissão persistente, não um caminho de
+  // arquivo. Antes usávamos o `file_picker`, que devolve o caminho de uma cópia
+  // no cache: o que se editava nunca voltava para o arquivo original — nem para
+  // o Google Drive — e o vínculo sumia quando o Android limpava o cache.
 
-  Future<void> vincularArquivo(String path) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefKey, path);
-    arquivoPath = path;
-    await carregarDoArquivo(path);
+  /// Abre o seletor do sistema e vincula o documento escolhido.
+  /// Retorna false se o usuário cancelar.
+  Future<bool> escolherEVincular() async {
+    try {
+      final doc = await DocumentoSaf.escolher();
+      if (doc == null) return false;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_prefUri, doc.uri);
+      await prefs.setString(_prefNome, doc.nome ?? 'biblioteca.txt');
+      await prefs.remove(_prefLegado);
+
+      arquivoUri = doc.uri;
+      arquivoNome = doc.nome ?? 'biblioteca.txt';
+      await carregarDoArquivo();
+      return true;
+    } catch (e) {
+      erroMensagem = 'Erro ao vincular: $e';
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<void> _restaurarArquivo() async {
     final prefs = await SharedPreferences.getInstance();
-    final path = prefs.getString(_prefKey);
-    if (path == null) return;
-    final file = File(path);
-    if (!await file.exists()) {
-      await prefs.remove(_prefKey);
+
+    // Vínculo antigo (caminho de cache): descarta e avisa.
+    if (prefs.getString(_prefUri) == null &&
+        prefs.getString(_prefLegado) != null) {
+      await prefs.remove(_prefLegado);
+      erroMensagem = 'O vínculo anterior não valia mais. '
+          'Toque em Selecionar arquivo e escolha o biblioteca.txt de novo.';
+      notifyListeners();
       return;
     }
-    arquivoPath = path;
-    await carregarDoArquivo(path);
+
+    final uri = prefs.getString(_prefUri);
+    if (uri == null) return;
+
+    // A permissão pode ter sido revogada (o usuário limpou os dados do app,
+    // ou o provedor perdeu o documento).
+    if (!await DocumentoSaf.temAcesso(uri)) {
+      await prefs.remove(_prefUri);
+      await prefs.remove(_prefNome);
+      erroMensagem = 'O acesso ao arquivo foi perdido. '
+          'Toque em Selecionar arquivo para vinculá-lo de novo.';
+      notifyListeners();
+      return;
+    }
+
+    arquivoUri = uri;
+    arquivoNome = prefs.getString(_prefNome) ?? await DocumentoSaf.nome(uri);
+    await carregarDoArquivo();
   }
 
-  Future<void> carregarDoArquivo(String path) async {
+  Future<void> carregarDoArquivo() async {
+    final uri = arquivoUri;
+    if (uri == null) return;
     try {
-      final texto = await File(path).readAsString();
-      livros = parsear(texto);
+      livros = parsear(await DocumentoSaf.ler(uri));
       ultimaRecarga = DateTime.now();
       erroMensagem = null;
     } catch (e) {
@@ -51,15 +105,13 @@ class BibliotecaStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> recarregarArquivo() async {
-    if (arquivoPath == null) return;
-    await carregarDoArquivo(arquivoPath!);
-  }
+  Future<void> recarregarArquivo() async => carregarDoArquivo();
 
   Future<void> salvar() async {
-    if (arquivoPath == null) return;
+    final uri = arquivoUri;
+    if (uri == null) return;
     try {
-      await File(arquivoPath!).writeAsString(serializar());
+      await DocumentoSaf.gravar(uri, serializar());
       ultimaGravacao = DateTime.now();
       erroMensagem = null;
     } catch (e) {

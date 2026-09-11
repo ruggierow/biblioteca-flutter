@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:file_picker/file_picker.dart';
 import '../models/biblioteca_store.dart';
 import '../theme.dart';
 import 'cadastro_view.dart';
@@ -37,7 +36,7 @@ class HomeView extends StatelessWidget {
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: store.arquivoPath == null
+                    onPressed: store.arquivoNome == null
                         ? null
                         : () => _abrirScanner(context),
                     icon: const Icon(Icons.barcode_reader),
@@ -64,7 +63,7 @@ class HomeView extends StatelessWidget {
                     _MenuRow(
                       icon: Icons.add_circle_outline,
                       titulo: 'Cadastro',
-                      habilitado: store.arquivoPath != null,
+                      habilitado: store.arquivoNome != null,
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -75,7 +74,7 @@ class HomeView extends StatelessWidget {
                     _MenuRow(
                       icon: Icons.search,
                       titulo: 'Pesquisa',
-                      habilitado: store.arquivoPath != null,
+                      habilitado: store.arquivoNome != null,
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -101,7 +100,7 @@ class HomeView extends StatelessWidget {
               // Info do arquivo
               _Card(
                 titulo: 'Arquivo',
-                child: store.arquivoPath == null
+                child: store.arquivoNome == null
                     ? const Padding(
                         padding: EdgeInsets.symmetric(vertical: 8),
                         child: Text('Nenhum arquivo vinculado',
@@ -111,7 +110,7 @@ class HomeView extends StatelessWidget {
                         children: [
                           _InfoRow(
                               label: 'Selecionado',
-                              valor: store.arquivoPath!.split('/').last),
+                              valor: store.arquivoNome!),
                           _InfoRow(
                               label: 'Livros',
                               valor: '${store.livros.length}'),
