@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Icone adaptativo (Android 8+). O launcher recorta a camada de fundo na forma
+  que ele usa — circulo, quadrado arredondado, gota — e anima a frente.
+
+  POR QUE EXISTE: sem isto o Android pega o PNG antigo, que ja e um quadrado
+  arredondado com fundo proprio, e aplica a mascara POR CIMA dele — cortando a
+  arte. No Samsung o livro de cima ficava aparado. Visto em 13/09/2026.
+
+  A arte ocupa 60dp dos 108dp do lado: a zona segura e o circulo central de
+  66dp, e o resto do quadro existe justamente para a mascara comer.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@mipmap/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>
