@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/biblioteca_store.dart';
 import '../models/livro.dart';
+import '../services/foto_service.dart';
 import '../theme.dart';
 import 'detalhe_view.dart';
 
@@ -15,6 +16,25 @@ class PesquisaView extends StatefulWidget {
 class _PesquisaViewState extends State<PesquisaView> {
   final _buscaCtrl = TextEditingController();
   String _busca = '';
+  bool _soComFoto = false;
+  Set<String> _fotosExistentes = {};
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _carregarFotos();
+  }
+
+  Future<void> _carregarFotos() async {
+    final livros = context.read<BibliotecaStore>().livros;
+    final existentes = <String>{};
+    for (final l in livros) {
+      if (await FotoService.shared.existe(livroId: l.fotoId)) {
+        existentes.add(l.fotoId);
+      }
+    }
+    if (mounted) setState(() => _fotosExistentes = existentes);
+  }
 
   @override
   void dispose() {
@@ -26,7 +46,7 @@ class _PesquisaViewState extends State<PesquisaView> {
   Widget build(BuildContext context) {
     final store = context.watch<BibliotecaStore>();
     final filtrados = _filtrar(store.livros, _busca);
-    final contagem = _busca.isEmpty
+    final contagem = _busca.isEmpty && !_soComFoto
         ? '${filtrados.length} ${filtrados.length == 1 ? 'livro' : 'livros'}'
         : '${filtrados.length} ${filtrados.length == 1 ? 'livro encontrado' : 'livros encontrados'}';
 
@@ -51,6 +71,25 @@ class _PesquisaViewState extends State<PesquisaView> {
                             setState(() { _buscaCtrl.clear(); _busca = ''; }),
                       )
                     : null,
+              ),
+            ),
+          ),
+          // Filtro de foto
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FilterChip(
+                label: const Text('Com foto'),
+                avatar: const Icon(Icons.photo, size: 16),
+                selected: _soComFoto,
+                onSelected: (v) => setState(() => _soComFoto = v),
+                selectedColor: bibPrimary.withOpacity(0.15),
+                checkmarkColor: bibPrimary,
+                labelStyle: TextStyle(
+                  color: _soComFoto ? bibPrimary : bibMuted,
+                  fontSize: 13,
+                ),
               ),
             ),
           ),
@@ -144,9 +183,13 @@ class _PesquisaViewState extends State<PesquisaView> {
   }
 
   List<Livro> _filtrar(List<Livro> livros, String busca) {
-    if (busca.trim().isEmpty) return livros;
+    var resultado = livros;
+    if (_soComFoto) {
+      resultado = resultado.where((l) => _fotosExistentes.contains(l.fotoId)).toList();
+    }
+    if (busca.trim().isEmpty) return resultado;
     final termo = _normalizar(busca.trim());
-    return livros.where((l) => _corresponde(l, termo)).toList();
+    return resultado.where((l) => _corresponde(l, termo)).toList();
   }
 
   bool _corresponde(Livro l, String termo) {

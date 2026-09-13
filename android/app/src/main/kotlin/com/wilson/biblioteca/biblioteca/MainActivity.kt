@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.provider.DocumentsContract
 import android.provider.OpenableColumns
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -32,7 +33,9 @@ class MainActivity : FlutterActivity() {
 
     private val canal = "biblioteca/saf"
     private val pedidoAbrirDocumento = 4711
+    private val pedidoAbrirPasta = 4712
     private var resultadoPendente: MethodChannel.Result? = null
+    private var resultadoPendentePasta: MethodChannel.Result? = null
 
     // POR QUE HA UMA THREAD AQUI: o SAF pode falar com a REDE. Num content://
     // do Google Drive, o ContentResolver precisa BAIXAR o arquivo antes de
@@ -98,6 +101,20 @@ class MainActivity : FlutterActivity() {
                 val uri = chamada.argument<String>("uri")
                 emSegundoPlano(resultado) { nomeVisivel(uri) }
             }
+
+            // Pasta de capas (leitura de arvore de documentos)
+            "escolherPasta" -> escolherPasta(resultado)
+            "listarPasta" -> {
+                val uri = chamada.argument<String>("uri")
+                emSegundoPlano(resultado) { listarPasta(uri) }
+            }
+            "lerArquivoDaPasta" -> {
+                val pastaUri   = chamada.argument<String>("pastaUri")
+                val documentId = chamada.argument<String>("documentId")
+                emSegundoPlano(resultado) { lerArquivoDaPasta(pastaUri, documentId) }
+            }
+            "temAcessoPasta" -> resultado.success(temAcessoPasta(chamada.argument<String>("uri")))
+
             else -> resultado.notImplemented()
         }
     }
@@ -107,7 +124,7 @@ class MainActivity : FlutterActivity() {
     // -----------------------------------------------------------------------
 
     private fun escolherDocumento(resultado: MethodChannel.Result) {
-        if (resultadoPendente != null) {
+        if (resultadoPendente != null || resultadoPendentePasta != null) {
             resultado.error("ocupado", "Já há um seletor aberto.", null)
             return
         }
@@ -129,8 +146,13 @@ class MainActivity : FlutterActivity() {
     @Deprecated("onActivityResult segue sendo o caminho para FlutterActivity")
     override fun onActivityResult(requisicao: Int, codigo: Int, dados: Intent?) {
         super.onActivityResult(requisicao, codigo, dados)
-        if (requisicao != pedidoAbrirDocumento) return
+        when (requisicao) {
+            pedidoAbrirDocumento -> tratarResultadoDocumento(codigo, dados)
+            pedidoAbrirPasta     -> tratarResultadoPasta(codigo, dados)
+        }
+    }
 
+    private fun tratarResultadoDocumento(codigo: Int, dados: Intent?) {
         val resultado = resultadoPendente ?: return
         resultadoPendente = null
 
@@ -157,6 +179,47 @@ class MainActivity : FlutterActivity() {
             val nome = nomeVisivel(texto)
             principal.post { resultado.success(mapOf("uri" to texto, "nome" to nome)) }
         }
+    }
+
+    // -----------------------------------------------------------------------
+    // Escolher pasta de capas
+    // -----------------------------------------------------------------------
+
+    private fun escolherPasta(resultado: MethodChannel.Result) {
+        if (resultadoPendente != null || resultadoPendentePasta != null) {
+            resultado.error("ocupado", "Já há um seletor aberto.", null)
+            return
+        }
+        resultadoPendentePasta = resultado
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            addFlags(
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                    Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION
+            )
+        }
+        startActivityForResult(intent, pedidoAbrirPasta)
+    }
+
+    private fun tratarResultadoPasta(codigo: Int, dados: Intent?) {
+        val resultado = resultadoPendentePasta ?: return
+        resultadoPendentePasta = null
+
+        val uri = dados?.data
+        if (codigo != Activity.RESULT_OK || uri == null) {
+            resultado.success(null)
+            return
+        }
+        try {
+            contentResolver.takePersistableUriPermission(
+                uri, Intent.FLAG_GRANT_READ_URI_PERMISSION
+            )
+        } catch (e: SecurityException) {
+            resultado.error("sem-permissao", "Não foi possível manter o acesso: ${e.message}", null)
+            return
+        }
+        // lastPathSegment do tree URI tem formato "primary:Pasta/Subpasta"
+        val nome = uri.lastPathSegment?.substringAfterLast(':') ?: uri.toString()
+        resultado.success(mapOf("uri" to uri.toString(), "nome" to nome))
     }
 
     // -----------------------------------------------------------------------
@@ -214,6 +277,50 @@ class MainActivity : FlutterActivity() {
     }
 
     // -----------------------------------------------------------------------
+    // Listar e ler arquivos de uma pasta (sincronização de capas)
+    // -----------------------------------------------------------------------
+
+    /** Roda FORA da thread principal — pode consultar o Drive. */
+    private fun listarPasta(uriTexto: String?): List<Map<String, String>> {
+        val uri = uriTexto?.let(Uri::parse)
+            ?: throw ErroDoCanal("uri-invalida", "URI ausente.")
+        val treeDocId  = DocumentsContract.getTreeDocumentId(uri)
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(uri, treeDocId)
+        val arquivos = mutableListOf<Map<String, String>>()
+        contentResolver.query(
+            childrenUri,
+            arrayOf(
+                DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                DocumentsContract.Document.COLUMN_DISPLAY_NAME
+            ),
+            null, null, null
+        )?.use { cursor ->
+            while (cursor.moveToNext()) {
+                val docId = cursor.getString(0) ?: continue
+                val nome  = cursor.getString(1) ?: continue
+                arquivos.add(mapOf("documentId" to docId, "nome" to nome))
+            }
+        }
+        return arquivos
+    }
+
+    /** Roda FORA da thread principal — pode baixar o arquivo do Drive. */
+    private fun lerArquivoDaPasta(pastaUri: String?, documentId: String?): ByteArray {
+        if (pastaUri == null || documentId == null)
+            throw ErroDoCanal("uri-invalida", "URI ou documentId ausente.")
+        val uri     = Uri.parse(pastaUri)
+        val fileUri = DocumentsContract.buildDocumentUriUsingTree(uri, documentId)
+        try {
+            return contentResolver.openInputStream(fileUri)?.use { it.readBytes() }
+                ?: throw ErroDoCanal("sem-fluxo", "Não foi possível ler o arquivo.")
+        } catch (e: FileNotFoundException) {
+            throw ErroDoCanal("nao-encontrado", "Arquivo não encontrado na pasta.")
+        } catch (e: SecurityException) {
+            throw ErroDoCanal("sem-permissao", "Acesso à pasta foi revogado.")
+        }
+    }
+
+    // -----------------------------------------------------------------------
     // Consultas
     // -----------------------------------------------------------------------
 
@@ -222,6 +329,14 @@ class MainActivity : FlutterActivity() {
         val uri = uriTexto?.let(Uri::parse) ?: return false
         return contentResolver.persistedUriPermissions.any {
             it.uri == uri && it.isReadPermission && it.isWritePermission
+        }
+    }
+
+    /** O app ainda tem permissão persistente de leitura nesta pasta? */
+    private fun temAcessoPasta(uriTexto: String?): Boolean {
+        val uri = uriTexto?.let(Uri::parse) ?: return false
+        return contentResolver.persistedUriPermissions.any {
+            it.uri == uri && it.isReadPermission
         }
     }
 

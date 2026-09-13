@@ -34,3 +34,7 @@ ios/Runner/GeneratedPluginRegistrant.*
 # macOS
 .DS_Store
 **/.DS_Store
+
+# Pacotes gerados: nunca entram no repositorio (66 MB cada)
+*.apk
+*.aab
