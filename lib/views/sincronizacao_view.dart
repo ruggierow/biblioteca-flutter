@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/biblioteca_store.dart';
-import '../services/pasta_capas_service.dart';
+import '../services/capas_dat_service.dart';
 import '../theme.dart';
 
 class SincronizacaoView extends StatefulWidget {
@@ -12,34 +12,34 @@ class SincronizacaoView extends StatefulWidget {
 }
 
 class _SincronizacaoViewState extends State<SincronizacaoView> {
-  String? _pastaNome;
+  String? _capasNome;
   bool _sincronizando = false;
   String? _resultadoSync;
 
   @override
   void initState() {
     super.initState();
-    _carregarEstadoPasta();
+    _carregarEstadoCapas();
   }
 
-  Future<void> _carregarEstadoPasta() async {
-    final temAcesso = await PastaCapasService.shared.temAcesso();
+  Future<void> _carregarEstadoCapas() async {
+    final temAcesso = await CapasDatService.shared.temAcesso();
     if (temAcesso) {
-      final n = await PastaCapasService.shared.nome;
-      if (mounted) setState(() => _pastaNome = n);
+      final n = await CapasDatService.shared.nome;
+      if (mounted) setState(() => _capasNome = n);
     } else {
-      await PastaCapasService.shared.desvincular();
+      await CapasDatService.shared.desvincular();
     }
   }
 
-  Future<void> _vincularPasta() async {
-    final nome = await PastaCapasService.shared.escolher();
-    if (nome != null && mounted) setState(() => _pastaNome = nome);
+  Future<void> _vincularCapas() async {
+    final nome = await CapasDatService.shared.escolher();
+    if (nome != null && mounted) setState(() => _capasNome = nome);
   }
 
-  Future<void> _desvincularPasta() async {
-    await PastaCapasService.shared.desvincular();
-    if (mounted) setState(() { _pastaNome = null; _resultadoSync = null; });
+  Future<void> _desvincularCapas() async {
+    await CapasDatService.shared.desvincular();
+    if (mounted) setState(() { _capasNome = null; _resultadoSync = null; });
   }
 
   Future<void> _sincronizar() async {
@@ -50,7 +50,7 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
     final fotoIds = store.livros.map((l) => l.fotoId).toSet();
 
     try {
-      final copiados = await PastaCapasService.shared.sincronizar(fotoIds);
+      final copiados = await CapasDatService.shared.sincronizar(fotoIds);
       if (mounted) {
         setState(() {
           _resultadoSync = copiados == 0
@@ -129,21 +129,22 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (_pastaNome == null) ...[
+                if (_capasNome == null) ...[
                   const Text(
-                    'Vincule a pasta onde o Mac/iOS salva as capas (iCloud Drive → Biblioteca → capas) '
-                    'para importá-las para este aparelho.',
+                    'Vincule o biblioteca.dat — o mesmo arquivo que o Mac e o iPhone '
+                    'usam — para trazer as capas dos livros para este aparelho. '
+                    'Ele fica ao lado do biblioteca.txt.',
                     style: TextStyle(color: bibMuted, fontSize: 13),
                   ),
                   const SizedBox(height: 12),
                   ListTile(
                     leading: const Icon(Icons.photo_library, color: bibPrimary),
-                    title: const Text('Vincular pasta de capas'),
-                    onTap: _vincularPasta,
+                    title: const Text('Vincular arquivo de capas'),
+                    onTap: _vincularCapas,
                     contentPadding: EdgeInsets.zero,
                   ),
                 ] else ...[
-                  _InfoRow(label: 'Pasta', valor: _pastaNome!),
+                  _InfoRow(label: 'Arquivo', valor: _capasNome!),
                   const SizedBox(height: 8),
                   if (_resultadoSync != null)
                     Padding(
@@ -166,7 +167,7 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
                       ),
                       const SizedBox(width: 8),
                       TextButton(
-                        onPressed: _desvincularPasta,
+                        onPressed: _desvincularCapas,
                         child: const Text('Desvincular', style: TextStyle(color: bibMuted)),
                       ),
                     ],

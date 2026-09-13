@@ -40,10 +40,10 @@ class DocumentoSaf {
 
   /// Lê o documento inteiro. Lança [PlatformException] se o acesso caiu,
   /// ou [TimeoutException] se o armazenamento não respondeu a tempo.
-  static Future<String> ler(String uri) async {
+  static Future<String> ler(String uri, {Duration? prazo}) async {
     final texto = await _canal
         .invokeMethod<String>('ler', {'uri': uri})
-        .timeout(_prazo);
+        .timeout(prazo ?? _prazo);
     return texto ?? '';
   }
 
