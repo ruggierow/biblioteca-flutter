@@ -3,11 +3,19 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Câmera (scanner de código de barras) -->
     <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!--
+      NAO declarar READ_MEDIA_IMAGES nem READ/WRITE_EXTERNAL_STORAGE.
+      A escolha da capa usa ImageSource.gallery, que abre o SELETOR DO SISTEMA:
+      ele devolve a foto por content:// sem exigir permissao nenhuma. As capas
+      sao gravadas na area do proprio app, e o arquivo do catalogo vai pelo SAF
+      — nenhum dos dois pede permissao.
+
+      Declarar as permissoes obrigaria a preencher a "Declaracao de permissoes
+      de fotos e videos" da Play Store, que o Google revisa e cobra todo ano,
+      em troca de acesso que o app nao usa. Retirado em 13/09/2026.
+    -->
     <uses-feature android:name="android.hardware.camera" android:required="false"/>
-    <!-- Acesso a arquivos (leitura/escrita do biblioteca.txt) -->
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29"/>
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
 
     <application
         android:label="biblioteca"
