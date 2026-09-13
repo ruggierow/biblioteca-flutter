@@ -62,6 +62,18 @@ class BibliotecaStore extends ChangeNotifier {
   }
 
   Future<void> _restaurarArquivo() async {
+    try {
+      await _restaurarArquivoInterno();
+    } catch (e) {
+      // Garante que qualquer falha de plataforma (ex.: Google Drive offline,
+      // permissão revogada de forma inesperada) não impeça o app de abrir.
+      erroMensagem = 'Não foi possível carregar o arquivo vinculado. '
+          'Toque em Selecionar arquivo para vinculá-lo de novo.';
+      notifyListeners();
+    }
+  }
+
+  Future<void> _restaurarArquivoInterno() async {
     final prefs = await SharedPreferences.getInstance();
 
     // Vínculo antigo (caminho de cache): descarta e avisa.

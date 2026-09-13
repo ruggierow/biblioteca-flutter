@@ -3,12 +3,15 @@ package com.wilson.biblioteca.biblioteca
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.provider.OpenableColumns
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import java.io.FileNotFoundException
+import java.util.concurrent.Executors
 
 /**
  * Ponte para o Storage Access Framework (SAF).
@@ -31,6 +34,45 @@ class MainActivity : FlutterActivity() {
     private val pedidoAbrirDocumento = 4711
     private var resultadoPendente: MethodChannel.Result? = null
 
+    // POR QUE HA UMA THREAD AQUI: o SAF pode falar com a REDE. Num content://
+    // do Google Drive, o ContentResolver precisa BAIXAR o arquivo antes de
+    // devolver os bytes. O Flutter entrega as chamadas de canal na thread
+    // principal, entao fazer isso aqui congela a interface e o Android mata o
+    // app por ANR — sem exceção nenhuma, o que torna o defeito invisivel no log
+    // e imune a try/catch do lado Dart.
+    //
+    // Com arquivo local nao aparece, porque a leitura e instantanea. So quebra
+    // com o Drive, e so quando o arquivo ainda NAO esta no cache dele: depois
+    // que entra em cache, volta a funcionar e parece que nunca houve defeito.
+    // Foi exatamente o que se viu em 13/09/2026.
+    private val tarefas = Executors.newSingleThreadExecutor()
+    private val principal = Handler(Looper.getMainLooper())
+
+    /** Erro que o canal devolve ao Dart, com codigo. */
+    private class ErroDoCanal(val codigo: String, mensagem: String) : Exception(mensagem)
+
+    /**
+     * Roda [trabalho] fora da thread principal e responde NELA — o
+     * MethodChannel.Result exige ser chamado na thread principal.
+     */
+    private fun emSegundoPlano(resultado: MethodChannel.Result, trabalho: () -> Any?) {
+        tarefas.execute {
+            try {
+                val valor = trabalho()
+                principal.post { resultado.success(valor) }
+            } catch (e: ErroDoCanal) {
+                principal.post { resultado.error(e.codigo, e.message, null) }
+            } catch (e: Exception) {
+                principal.post { resultado.error("erro", e.message, null) }
+            }
+        }
+    }
+
+    override fun onDestroy() {
+        tarefas.shutdown()
+        super.onDestroy()
+    }
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, canal)
@@ -40,14 +82,22 @@ class MainActivity : FlutterActivity() {
     private fun tratar(chamada: MethodCall, resultado: MethodChannel.Result) {
         when (chamada.method) {
             "escolherDocumento" -> escolherDocumento(resultado)
-            "ler" -> ler(chamada.argument<String>("uri"), resultado)
-            "gravar" -> gravar(
-                chamada.argument<String>("uri"),
-                chamada.argument<String>("conteudo"),
-                resultado
-            )
+            "ler" -> {
+                val uri = chamada.argument<String>("uri")
+                emSegundoPlano(resultado) { ler(uri) }
+            }
+            "gravar" -> {
+                val uri = chamada.argument<String>("uri")
+                val conteudo = chamada.argument<String>("conteudo")
+                emSegundoPlano(resultado) { gravar(uri, conteudo) }
+            }
+            // Consulta local a lista de permissoes do proprio sistema: nao toca
+            // no provedor, nao vai a rede. Pode ficar na thread principal.
             "temAcesso" -> resultado.success(temAcesso(chamada.argument<String>("uri")))
-            "nome" -> resultado.success(nomeVisivel(chamada.argument<String>("uri")))
+            "nome" -> {
+                val uri = chamada.argument<String>("uri")
+                emSegundoPlano(resultado) { nomeVisivel(uri) }
+            }
             else -> resultado.notImplemented()
         }
     }
@@ -100,57 +150,67 @@ class MainActivity : FlutterActivity() {
             resultado.error("sem-permissao", "Não foi possível manter o acesso: ${e.message}", null)
             return
         }
-        resultado.success(mapOf("uri" to uri.toString(), "nome" to nomeVisivel(uri.toString())))
+        // nomeVisivel consulta o provedor, que pode ser o Drive: sai da thread
+        // principal como as demais.
+        val texto = uri.toString()
+        tarefas.execute {
+            val nome = nomeVisivel(texto)
+            principal.post { resultado.success(mapOf("uri" to texto, "nome" to nome)) }
+        }
     }
 
     // -----------------------------------------------------------------------
     // Ler e gravar no documento de verdade
     // -----------------------------------------------------------------------
 
-    private fun ler(uriTexto: String?, resultado: MethodChannel.Result) {
+    /** Roda FORA da thread principal — pode baixar o arquivo do Drive. */
+    private fun ler(uriTexto: String?): String {
         val uri = uriTexto?.let(Uri::parse)
-        if (uri == null) {
-            resultado.error("uri-invalida", "URI ausente.", null); return
-        }
+            ?: throw ErroDoCanal("uri-invalida", "URI ausente.")
         try {
-            val texto = contentResolver.openInputStream(uri)?.use {
+            return contentResolver.openInputStream(uri)?.use {
                 it.readBytes().toString(Charsets.UTF_8)
-            }
-            if (texto == null) {
-                resultado.error("sem-fluxo", "Não foi possível abrir o documento.", null)
-            } else {
-                resultado.success(texto)
-            }
+            } ?: throw ErroDoCanal("sem-fluxo", "Não foi possível abrir o documento.")
         } catch (e: FileNotFoundException) {
-            resultado.error("nao-encontrado", "O arquivo vinculado não existe mais.", null)
+            throw ErroDoCanal("nao-encontrado", "O arquivo vinculado não existe mais.")
         } catch (e: SecurityException) {
-            resultado.error("sem-permissao", "O acesso ao arquivo foi revogado.", null)
-        } catch (e: Exception) {
-            resultado.error("erro-leitura", e.message, null)
+            throw ErroDoCanal("sem-permissao", "O acesso ao arquivo foi revogado.")
         }
     }
 
-    private fun gravar(uriTexto: String?, conteudo: String?, resultado: MethodChannel.Result) {
+    /** Roda FORA da thread principal — pode enviar o arquivo ao Drive. */
+    private fun gravar(uriTexto: String?, conteudo: String?): Boolean {
         val uri = uriTexto?.let(Uri::parse)
-        if (uri == null || conteudo == null) {
-            resultado.error("uri-invalida", "URI ou conteúdo ausente.", null); return
-        }
-        try {
-            // "wt" = write + truncate. Sem o "t", um arquivo novo menor que o
-            // anterior deixaria a cauda do conteúdo antigo no fim — defeito
-            // silencioso e chato de achar.
-            contentResolver.openOutputStream(uri, "wt")?.use {
-                it.write(conteudo.toByteArray(Charsets.UTF_8))
-                it.flush()
-            } ?: run {
-                resultado.error("sem-fluxo", "Não foi possível abrir para escrita.", null); return
+            ?: throw ErroDoCanal("uri-invalida", "URI ausente.")
+        if (conteudo == null) throw ErroDoCanal("uri-invalida", "Conteúdo ausente.")
+        val bytes = conteudo.toByteArray(Charsets.UTF_8)
+
+        // "wt" = write + truncate. Sem o truncar, um arquivo novo menor que o
+        // anterior deixaria a cauda do conteúdo antigo no fim — defeito
+        // silencioso e chato de achar.
+        //
+        // Nem todo provedor aceita "wt"; alguns só aceitam "rwt". Tentamos os
+        // dois e, se nenhum truncar, PARAMOS: gravar em "w" puro escreveria por
+        // cima deixando o rabo do arquivo antigo, que é pior que não gravar.
+        for (modo in listOf("wt", "rwt")) {
+            try {
+                contentResolver.openOutputStream(uri, modo)?.use {
+                    it.write(bytes)
+                    it.flush()
+                } ?: continue
+                return true
+            } catch (e: SecurityException) {
+                throw ErroDoCanal("sem-permissao", "O acesso de escrita foi revogado.")
+            } catch (e: IllegalArgumentException) {
+                continue          // este provedor não conhece o modo; tenta o próximo
+            } catch (e: UnsupportedOperationException) {
+                continue
             }
-            resultado.success(true)
-        } catch (e: SecurityException) {
-            resultado.error("sem-permissao", "O acesso de escrita foi revogado.", null)
-        } catch (e: Exception) {
-            resultado.error("erro-escrita", e.message, null)
         }
+        throw ErroDoCanal(
+            "sem-fluxo",
+            "Este armazenamento não permite regravar o arquivo com segurança."
+        )
     }
 
     // -----------------------------------------------------------------------

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/services.dart';
 
 /// Referência a um documento escolhido pelo usuário via SAF.
@@ -29,15 +31,27 @@ class DocumentoSaf {
     return DocumentoEscolhido(uri: uri, nome: r['nome'] as String?);
   }
 
-  /// Lê o documento inteiro. Lança [PlatformException] se o acesso caiu.
+  /// Prazo para as operações que podem falar com a rede.
+  ///
+  /// Um `content://` do Google Drive baixa o arquivo antes de entregar os
+  /// bytes. Sem prazo, uma rede ruim deixaria a tela esperando para sempre —
+  /// e o usuário sem nenhuma pista do que houve.
+  static const _prazo = Duration(seconds: 30);
+
+  /// Lê o documento inteiro. Lança [PlatformException] se o acesso caiu,
+  /// ou [TimeoutException] se o armazenamento não respondeu a tempo.
   static Future<String> ler(String uri) async {
-    final texto = await _canal.invokeMethod<String>('ler', {'uri': uri});
+    final texto = await _canal
+        .invokeMethod<String>('ler', {'uri': uri})
+        .timeout(_prazo);
     return texto ?? '';
   }
 
   /// Grava por cima do documento original, truncando o que havia antes.
   static Future<void> gravar(String uri, String conteudo) async {
-    await _canal.invokeMethod<bool>('gravar', {'uri': uri, 'conteudo': conteudo});
+    await _canal
+        .invokeMethod<bool>('gravar', {'uri': uri, 'conteudo': conteudo})
+        .timeout(_prazo);
   }
 
   /// O app ainda tem permissão persistente de leitura e escrita?
@@ -47,6 +61,9 @@ class DocumentoSaf {
 
   /// Nome visível do documento, para mostrar na tela.
   static Future<String?> nome(String uri) async {
-    return _canal.invokeMethod<String>('nome', {'uri': uri});
+    return _canal.invokeMethod<String>('nome', {'uri': uri}).timeout(
+      _prazo,
+      onTimeout: () => null, // é só rótulo de tela; não vale travar por isso
+    );
   }
 }
