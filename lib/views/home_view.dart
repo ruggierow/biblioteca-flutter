@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../services/versao_app.dart';
 import 'package:provider/provider.dart';
 import '../models/biblioteca_store.dart';
 import '../theme.dart';
@@ -205,6 +207,16 @@ class _HomeHeader extends StatelessWidget {
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.white)),
+              const Spacer(),
+              // Versao e build, lidos do pacote instalado. Discretos: servem
+              // para saber o que esta rodando quando algo da errado.
+              FutureBuilder<String>(
+                future: VersaoApp.obter(),
+                builder: (_, s) => Text(
+                  s.data == null || s.data!.isEmpty ? '' : 'v.${s.data}',
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                ),
+              ),
             ],
           ),
         ],

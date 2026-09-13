@@ -80,6 +80,28 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, canal)
             .setMethodCallHandler { chamada, resultado -> tratar(chamada, resultado) }
+
+        // Canal separado: versao nao tem nada a ver com SAF.
+        //
+        // O numero vem do PROPRIO pacote instalado, nao de uma constante no
+        // codigo: assim ele nunca mente sobre qual APK esta rodando. Em
+        // 13/09/2026 passamos meia tarde sem saber se o aparelho tinha a b4, a
+        // b6 ou a b7 — e a tela nao ajudava, porque nao dizia nada.
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "biblioteca/app")
+            .setMethodCallHandler { chamada, resultado ->
+                if (chamada.method == "versao") resultado.success(versaoDoPacote())
+                else resultado.notImplemented()
+            }
+    }
+
+    /** "1.9.0 (7)" — nome da versao e numero do build, como o sistema os ve. */
+    private fun versaoDoPacote(): String = try {
+        val info = packageManager.getPackageInfo(packageName, 0)
+        val build = if (android.os.Build.VERSION.SDK_INT >= 28) info.longVersionCode
+                    else @Suppress("DEPRECATION") info.versionCode.toLong()
+        "${info.versionName} ($build)"
+    } catch (e: Exception) {
+        ""
     }
 
     private fun tratar(chamada: MethodCall, resultado: MethodChannel.Result) {

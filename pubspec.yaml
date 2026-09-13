@@ -1,7 +1,7 @@
 name: biblioteca
 description: Gestão de biblioteca pessoal — iOS e Android.
 publish_to: 'none'
-version: 1.9.0+7
+version: 1.9.0+8
 environment:
   sdk: '>=3.3.0 <4.0.0'
 
