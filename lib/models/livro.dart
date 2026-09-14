@@ -30,8 +30,19 @@ class Livro {
 
   bool get grupoLiteratura => participaDeGrupo(grupos);
 
-  static bool participaDeGrupo(String bruto) =>
-      bruto.split(';').any((p) => (int.tryParse(p.trim()) ?? 0) > 0);
+  /// Os identificadores de grupo, na ordem em que estao no arquivo.
+  List<int> get listaGrupos => lerGrupos(grupos);
+
+  static List<int> lerGrupos(String bruto) => bruto
+      .split(';')
+      .map((p) => int.tryParse(p.trim()) ?? 0)
+      .where((n) => n > 0)
+      .toList();
+
+  static String comGrupos(List<int> ids) =>
+      ids.isEmpty ? '0' : (ids.toList()..sort()).join(';');
+
+  static bool participaDeGrupo(String bruto) => lerGrupos(bruto).isNotEmpty;
 
   /// Liga ou desliga a participação preservando a lista quando ela já existe:
   /// um livro em "1;3" que continua no grupo permanece "1;3".
@@ -73,6 +84,7 @@ class Livro {
     String? comentarios,
     String? local,
     String? grupos,
+    List<int>? listaGrupos,
     bool? grupoLiteratura,
   }) {
     return Livro(
@@ -85,9 +97,11 @@ class Livro {
       comentarios: comentarios ?? this.comentarios,
       local: local ?? this.local,
       grupos: grupos ??
-          (grupoLiteratura == null
-              ? this.grupos
-              : comParticipacao(this.grupos, grupoLiteratura)),
+          (listaGrupos != null
+              ? comGrupos(listaGrupos)
+              : grupoLiteratura == null
+                  ? this.grupos
+                  : comParticipacao(this.grupos, grupoLiteratura)),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../models/grupos_store.dart';
 import '../models/livro.dart';
 import '../services/foto_service.dart';
 import '../theme.dart';
@@ -111,7 +112,11 @@ class _DetalheViewState extends State<DetalheView> {
                     valorCor: livro.emprestado ? bibDanger : bibAccent),
                 _InfoRow(
                     label: 'Grupo de literatura',
-                    valor: livro.grupoLiteratura ? 'Sim' : 'Não'),
+                    valor: livro.listaGrupos.isEmpty
+                        ? 'Não'
+                        : livro.listaGrupos
+                            .map(GruposStore.shared.nome)
+                            .join(', ')),
               ],
             ),
           ),

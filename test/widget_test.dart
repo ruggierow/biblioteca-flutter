@@ -10,6 +10,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:biblioteca/models/biblioteca_store.dart';
 import 'package:biblioteca/models/livro.dart';
+import 'package:biblioteca/models/filtro_pesquisa.dart';
+import 'package:biblioteca/models/grupos_store.dart';
 
 void main() {
   // O construtor do store lê SharedPreferences para restaurar o vínculo;
@@ -104,6 +106,93 @@ void main() {
         l.copyWith(grupoLiteratura: false).copyWith(grupoLiteratura: true).grupos,
         '1',
       );
+    });
+  });
+
+  group('Grupos', () {
+    test('listaGrupos le e escreve a coluna', () {
+      const l = Livro(id: '1', titulo: 'T', grupos: '1;3');
+      expect(l.listaGrupos, [1, 3]);
+      expect(l.copyWith(listaGrupos: [5, 2]).grupos, '2;5');
+      expect(l.copyWith(listaGrupos: []).grupos, '0');
+      expect(l.copyWith(listaGrupos: []).grupoLiteratura, isFalse);
+    });
+
+    test('grupo sem nome conhecido vira "Grupo N"', () {
+      expect(GruposStore.shared.nome(1), 'Grupo de Literatura');
+      expect(GruposStore.shared.nome(97), 'Grupo 97');
+    });
+
+    test('o seletor oferece tambem os grupos que so aparecem nos livros', () {
+      const l = Livro(id: '1', titulo: 'T', grupos: '1;7');
+      final ids = GruposStore.shared.oferecidos([l]).map((g) => g.id).toList();
+      expect(ids, containsAll([1, 7]));
+      expect(ids, orderedEquals([...ids]..sort()));
+    });
+  });
+
+  group('Filtro da pesquisa', () {
+    Livro livro({bool emprestado = false, String grupos = '0'}) =>
+        Livro(id: 'x', titulo: 'T', emprestado: emprestado, grupos: grupos);
+
+    test('sem filtro nenhum, tudo passa', () {
+      final f = FiltroPesquisa();
+      expect(f.ativo, isFalse);
+      expect(f.aceita(livro()), isTrue);
+      expect(f.aceita(livro(emprestado: true, grupos: '2')), isTrue);
+    });
+
+    test('status separa emprestados de disponiveis', () {
+      final f = FiltroPesquisa(status: FiltroStatus.emprestados);
+      expect(f.ativo, isTrue);
+      expect(f.aceita(livro(emprestado: true)), isTrue);
+      expect(f.aceita(livro()), isFalse);
+
+      f.status = FiltroStatus.disponiveis;
+      expect(f.aceita(livro()), isTrue);
+      expect(f.aceita(livro(emprestado: true)), isFalse);
+    });
+
+    test('grupo especifico nao aceita quem esta so em outro', () {
+      final f = FiltroPesquisa(grupo: const FiltroGrupo.especifico(3));
+      expect(f.aceita(livro(grupos: '1;3')), isTrue);
+      expect(f.aceita(livro(grupos: '1')), isFalse);
+      expect(f.aceita(livro()), isFalse);
+
+      f.grupo = FiltroGrupo.qualquerUm;
+      expect(f.aceita(livro(grupos: '2')), isTrue);
+      expect(f.aceita(livro()), isFalse);
+    });
+
+    test('limpar desliga tudo', () {
+      final f = FiltroPesquisa(
+        texto: 'x',
+        status: FiltroStatus.emprestados,
+        grupo: FiltroGrupo.qualquerUm,
+        comFoto: true,
+      );
+      expect(f.quantosLigados, 3);
+      f.limpar();
+      expect(f.ativo, isFalse);
+      expect(f.quantosLigados, 0);
+      expect(f.texto, '');
+    });
+
+    test('o resumo nomeia o grupo escolhido', () {
+      final f = FiltroPesquisa(
+        status: FiltroStatus.emprestados,
+        grupo: const FiltroGrupo.especifico(2),
+        comFoto: true,
+      );
+      expect(f.resumo((id) => 'Clube $id'), 'Emprestados · Clube 2 · Com foto');
+      expect(FiltroPesquisa().resumo((_) => 'x'), '');
+    });
+
+    test('a copia nao mexe no original', () {
+      final f = FiltroPesquisa(texto: 'abc');
+      final c = f.copia()..status = FiltroStatus.emprestados;
+      expect(c.texto, 'abc');
+      expect(f.status, FiltroStatus.todos);
     });
   });
 }

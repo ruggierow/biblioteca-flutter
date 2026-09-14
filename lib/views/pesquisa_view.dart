@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/biblioteca_store.dart';
+import '../models/filtro_pesquisa.dart';
+import '../models/grupos_store.dart';
 import '../models/livro.dart';
 import '../services/foto_service.dart';
 import '../theme.dart';
 import 'detalhe_view.dart';
+import 'filtros_sheet.dart';
 
 class PesquisaView extends StatefulWidget {
   const PesquisaView({super.key});
@@ -15,9 +18,7 @@ class PesquisaView extends StatefulWidget {
 
 class _PesquisaViewState extends State<PesquisaView> {
   final _buscaCtrl = TextEditingController();
-  String _busca = '';
-  bool _soComFoto = false;
-  bool _soDoGrupo = false;
+  final _filtro = FiltroPesquisa();
   Set<String> _fotosExistentes = {};
 
   @override
@@ -46,14 +47,28 @@ class _PesquisaViewState extends State<PesquisaView> {
   @override
   Widget build(BuildContext context) {
     final store = context.watch<BibliotecaStore>();
-    final filtrados = _filtrar(store.livros, _busca);
-    final semFiltro = _busca.isEmpty && !_soComFoto && !_soDoGrupo;
-    final contagem = semFiltro
+    final filtrados = _filtrar(store.livros);
+    final resumo = _filtro.resumo(GruposStore.shared.nome);
+    final contagem = !_filtro.ativo
         ? '${filtrados.length} ${filtrados.length == 1 ? 'livro' : 'livros'}'
         : '${filtrados.length} ${filtrados.length == 1 ? 'livro encontrado' : 'livros encontrados'}';
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pesquisa')),
+      appBar: AppBar(
+        title: const Text('Pesquisa'),
+        actions: [
+          IconButton(
+            tooltip: 'Filtros',
+            icon: Icon(
+              _filtro.quantosLigados > 0
+                  ? Icons.filter_alt
+                  : Icons.filter_alt_outlined,
+              color: _filtro.quantosLigados > 0 ? bibPrimary : null,
+            ),
+            onPressed: () => _abrirFiltros(store.livros),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           // Campo de busca no corpo — teclado funciona corretamente
@@ -62,45 +77,43 @@ class _PesquisaViewState extends State<PesquisaView> {
             child: TextField(
               controller: _buscaCtrl,
               autofocus: false,
-              onChanged: (v) => setState(() => _busca = v),
+              onChanged: (v) => setState(() => _filtro.texto = v),
               decoration: InputDecoration(
-                hintText: 'Buscar por título, autor, tema, ano, status ou grupo…',
+                hintText: 'Buscar por título, autor, tema, local ou ano…',
                 prefixIcon: const Icon(Icons.search, color: bibPrimary),
-                suffixIcon: _busca.isNotEmpty
+                suffixIcon: _filtro.texto.isNotEmpty
                     ? IconButton(
                         icon: const Icon(Icons.clear),
-                        onPressed: () =>
-                            setState(() { _buscaCtrl.clear(); _busca = ''; }),
+                        onPressed: () => setState(() {
+                          _buscaCtrl.clear();
+                          _filtro.texto = '';
+                        }),
                       )
                     : null,
               ),
             ),
           ),
-          // Filtros de foto e de grupo de literatura
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 4,
+          // Resumo dos filtros ligados na folha
+          if (resumo.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 8, 4),
+              child: Row(
                 children: [
-                  _chipDeFiltro(
-                    rotulo: 'Com foto',
-                    icone: Icons.photo,
-                    ligado: _soComFoto,
-                    aoMudar: (v) => setState(() => _soComFoto = v),
+                  Expanded(
+                    child: Text(resumo,
+                        style: const TextStyle(color: bibMuted, fontSize: 12)),
                   ),
-                  _chipDeFiltro(
-                    rotulo: 'Grupo de literatura',
-                    icone: Icons.menu_book,
-                    ligado: _soDoGrupo,
-                    aoMudar: (v) => setState(() => _soDoGrupo = v),
+                  TextButton(
+                    onPressed: () => setState(() {
+                      final t = _filtro.texto;
+                      _filtro.limpar();
+                      _filtro.texto = t;
+                    }),
+                    child: const Text('Limpar'),
                   ),
                 ],
               ),
             ),
-          ),
           if (filtrados.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -117,7 +130,7 @@ class _PesquisaViewState extends State<PesquisaView> {
             child: filtrados.isEmpty
                 ? Center(
                     child: Text(
-                      _busca.isEmpty ? 'Nenhum livro cadastrado' : 'Nenhum resultado',
+                      _filtro.ativo ? 'Nenhum resultado' : 'Nenhum livro cadastrado',
                       style: const TextStyle(color: bibMuted, fontSize: 16),
                     ),
                   )
@@ -190,67 +203,44 @@ class _PesquisaViewState extends State<PesquisaView> {
         overflow: TextOverflow.ellipsis);
   }
 
-  Widget _chipDeFiltro({
-    required String rotulo,
-    required IconData icone,
-    required bool ligado,
-    required ValueChanged<bool> aoMudar,
-  }) {
-    return FilterChip(
-      label: Text(rotulo),
-      avatar: Icon(icone, size: 16),
-      selected: ligado,
-      onSelected: aoMudar,
-      selectedColor: bibPrimary.withOpacity(0.15),
-      checkmarkColor: bibPrimary,
-      labelStyle: TextStyle(
-        color: ligado ? bibPrimary : bibMuted,
-        fontSize: 13,
+  Future<void> _abrirFiltros(List<Livro> livros) async {
+    final novo = await showModalBottomSheet<FiltroPesquisa>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: false,
+      builder: (_) => FiltrosSheet(
+        filtro: _filtro,
+        grupos: GruposStore.shared.oferecidos(livros),
       ),
     );
+    if (novo == null) return;
+    setState(() {
+      _filtro.status = novo.status;
+      _filtro.grupo = novo.grupo;
+      _filtro.comFoto = novo.comFoto;
+    });
   }
 
-  List<Livro> _filtrar(List<Livro> livros, String busca) {
-    var resultado = livros;
-    if (_soComFoto) {
-      resultado = resultado.where((l) => _fotosExistentes.contains(l.fotoId)).toList();
+  List<Livro> _filtrar(List<Livro> livros) {
+    var resultado = livros.where(_filtro.aceita).toList();
+    if (_filtro.comFoto) {
+      resultado =
+          resultado.where((l) => _fotosExistentes.contains(l.fotoId)).toList();
     }
-    if (_soDoGrupo) {
-      resultado = resultado.where((l) => l.grupoLiteratura).toList();
-    }
-    if (busca.trim().isEmpty) return resultado;
-    final termo = _normalizar(busca.trim());
+    final termo = _normalizar(_filtro.texto.trim());
+    if (termo.isEmpty) return resultado;
     return resultado.where((l) => _corresponde(l, termo)).toList();
   }
 
+  /// A caixa unica procura nos mesmos campos que as quatro caixas do Mac
+  /// (titulo, autor, tema, local) mais o ano. Status e grupo saem daqui:
+  /// eles tem seletor proprio na folha de filtros.
   bool _corresponde(Livro l, String termo) {
     return _contem(l.titulo, termo) ||
         l.autores.any((a) => _contem(a, termo)) ||
         l.temas.any((t) => _contem(t, termo)) ||
         _contem(l.local, termo) ||
-        _contem(l.ano, termo) ||
-        _correspondeEmprestado(l, termo) ||
-        _correspondeGrupo(l, termo);
-  }
-
-  bool _correspondeEmprestado(Livro l, String termo) {
-    final opcoes = l.emprestado
-        ? ['emprestado', 'emprestada', 'emprestimo']
-        : ['nao emprestado', 'disponivel'];
-    return opcoes.any((o) {
-      final n = _normalizar(o);
-      return n.contains(termo) || termo.contains(n);
-    });
-  }
-
-  bool _correspondeGrupo(Livro l, String termo) {
-    final opcoes = l.grupoLiteratura
-        ? ['grupo', 'literatura', 'grupo de literatura']
-        : ['sem grupo', 'fora do grupo'];
-    return opcoes.any((o) {
-      final n = _normalizar(o);
-      return n.contains(termo) || termo.contains(n);
-    });
+        _contem(l.ano, termo);
   }
 
   bool _contem(String texto, String termo) =>

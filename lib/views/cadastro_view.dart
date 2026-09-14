@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../models/biblioteca_store.dart';
+import '../models/grupos_store.dart';
 import '../models/livro.dart';
 import '../services/foto_service.dart';
 import '../services/isbn_service.dart';
@@ -33,7 +34,7 @@ class _CadastroViewState extends State<CadastroView> {
   List<TextEditingController> _temasCtrl = [TextEditingController()];
 
   bool _emprestado = false;
-  bool _grupoLiteratura = false;
+  Set<int> _gruposSelecionados = {};
   bool _buscandoISBN = false;
   String _isbnStatus = '';
   bool _isbnSucesso = false;
@@ -88,7 +89,7 @@ class _CadastroViewState extends State<CadastroView> {
     _localCtrl.text = l.local;
     _comentariosCtrl.text = l.comentarios;
     _emprestado = l.emprestado;
-    _grupoLiteratura = l.grupoLiteratura;
+    _gruposSelecionados = l.listaGrupos.toSet();
     _autoresCtrl = l.autores.isEmpty
         ? [TextEditingController()]
         : l.autores.map((s) => TextEditingController(text: s)).toList();
@@ -308,6 +309,30 @@ class _CadastroViewState extends State<CadastroView> {
           ),
           const SizedBox(height: 12),
 
+          // Um livro pode estar em mais de um grupo — e assim que o Mac e o
+          // Windows guardam, na coluna 8 ("1;3").
+          _Secao(
+            titulo: 'Grupos de literatura',
+            child: Column(
+              children: GruposStore.shared
+                  .oferecidos(context.read<BibliotecaStore>().livros)
+                  .map((g) => SwitchListTile(
+                        title: Text(g.nome),
+                        value: _gruposSelecionados.contains(g.id),
+                        onChanged: (ligado) => setState(() {
+                          if (ligado) {
+                            _gruposSelecionados.add(g.id);
+                          } else {
+                            _gruposSelecionados.remove(g.id);
+                          }
+                        }),
+                        activeColor: bibPrimary,
+                        contentPadding: EdgeInsets.zero,
+                      ))
+                  .toList(),
+            ),
+          ),
+
           // Extras
           _Secao(
             titulo: 'Extras',
@@ -317,13 +342,6 @@ class _CadastroViewState extends State<CadastroView> {
                   title: const Text('Emprestado'),
                   value: _emprestado,
                   onChanged: (v) => setState(() => _emprestado = v),
-                  activeColor: bibPrimary,
-                  contentPadding: EdgeInsets.zero,
-                ),
-                SwitchListTile(
-                  title: const Text('Grupo de literatura'),
-                  value: _grupoLiteratura,
-                  onChanged: (v) => setState(() => _grupoLiteratura = v),
                   activeColor: bibPrimary,
                   contentPadding: EdgeInsets.zero,
                 ),
@@ -532,7 +550,7 @@ class _CadastroViewState extends State<CadastroView> {
               comentarios: _comentariosCtrl.text,
               local: _localCtrl.text.trim(),
               emprestado: _emprestado,
-              grupoLiteratura: _grupoLiteratura,
+              listaGrupos: _gruposSelecionados.toList()..sort(),
             );
 
     final idNovo = livro.fotoId;
