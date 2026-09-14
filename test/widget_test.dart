@@ -67,7 +67,7 @@ void main() {
           emprestado: true,
           comentarios: 'nota',
           local: 'sala',
-          grupoLiteratura: true,
+          grupos: '1',
         ),
       ];
       final devolta = store.parsear(store.serializar());
@@ -76,6 +76,34 @@ void main() {
       expect(devolta.first.autores, ['Autor Um', 'Autor Dois']);
       expect(devolta.first.emprestado, isTrue);
       expect(devolta.first.grupoLiteratura, isTrue);
+    });
+
+    // A interface web guarda na coluna 8 uma lista de grupos ("1;3"). Este
+    // motor so distingue participar de nao participar, mas nao pode achatar
+    // o que nao entende: gravar daqui apagaria os grupos do arquivo.
+    test('preserva a lista de grupos da coluna 8', () {
+      final livros = store.parsear('T\tA\tX\t2000\t0\t\t\t1;3\n');
+      expect(livros.first.grupos, '1;3');
+      expect(livros.first.grupoLiteratura, isTrue);
+
+      store.livros = livros;
+      expect(store.serializar().trim().split('\t').last, '1;3');
+    });
+
+    test('grupo diferente de 1 tambem conta como participacao', () {
+      final livros = store.parsear('T\tA\tX\t2000\t0\t\t\t2\n');
+      expect(livros.first.grupoLiteratura, isTrue);
+      expect(livros.first.grupos, '2');
+    });
+
+    test('manter a participacao nao reescreve a lista', () {
+      const l = Livro(id: '1', titulo: 'T', grupos: '1;3');
+      expect(l.copyWith(grupoLiteratura: true).grupos, '1;3');
+      expect(l.copyWith(grupoLiteratura: false).grupos, '0');
+      expect(
+        l.copyWith(grupoLiteratura: false).copyWith(grupoLiteratura: true).grupos,
+        '1',
+      );
     });
   });
 }

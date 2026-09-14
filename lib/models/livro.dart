@@ -7,7 +7,14 @@ class Livro {
   final bool emprestado;
   final String comentarios;
   final String local;
-  final bool grupoLiteratura;
+
+  /// Coluna 8 do arquivo, guardada exatamente como veio.
+  ///
+  /// A interface web escreve ali uma lista de grupos separada por ponto e
+  /// vírgula ("1;3"); o celular só distingue participar de não participar.
+  /// Guardar o texto original impede que uma gravação feita aqui apague a
+  /// participação em grupos que este motor ainda não sabe representar.
+  final String grupos;
 
   const Livro({
     required this.id,
@@ -18,8 +25,20 @@ class Livro {
     this.emprestado = false,
     this.comentarios = '',
     this.local = '',
-    this.grupoLiteratura = false,
+    this.grupos = '0',
   });
+
+  bool get grupoLiteratura => participaDeGrupo(grupos);
+
+  static bool participaDeGrupo(String bruto) =>
+      bruto.split(';').any((p) => (int.tryParse(p.trim()) ?? 0) > 0);
+
+  /// Liga ou desliga a participação preservando a lista quando ela já existe:
+  /// um livro em "1;3" que continua no grupo permanece "1;3".
+  static String comParticipacao(String bruto, bool participa) {
+    if (participa == participaDeGrupo(bruto)) return bruto;
+    return participa ? '1' : '0';
+  }
 
   // Hash FNV-1a duplo — mesmo algoritmo do iOS e da web, para que fotos
   // salvas em qualquer plataforma sejam encontradas pelas demais.
@@ -53,6 +72,7 @@ class Livro {
     bool? emprestado,
     String? comentarios,
     String? local,
+    String? grupos,
     bool? grupoLiteratura,
   }) {
     return Livro(
@@ -64,7 +84,10 @@ class Livro {
       emprestado: emprestado ?? this.emprestado,
       comentarios: comentarios ?? this.comentarios,
       local: local ?? this.local,
-      grupoLiteratura: grupoLiteratura ?? this.grupoLiteratura,
+      grupos: grupos ??
+          (grupoLiteratura == null
+              ? this.grupos
+              : comParticipacao(this.grupos, grupoLiteratura)),
     );
   }
 }

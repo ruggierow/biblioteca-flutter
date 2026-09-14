@@ -17,6 +17,7 @@ class _PesquisaViewState extends State<PesquisaView> {
   final _buscaCtrl = TextEditingController();
   String _busca = '';
   bool _soComFoto = false;
+  bool _soDoGrupo = false;
   Set<String> _fotosExistentes = {};
 
   @override
@@ -46,7 +47,8 @@ class _PesquisaViewState extends State<PesquisaView> {
   Widget build(BuildContext context) {
     final store = context.watch<BibliotecaStore>();
     final filtrados = _filtrar(store.livros, _busca);
-    final contagem = _busca.isEmpty && !_soComFoto
+    final semFiltro = _busca.isEmpty && !_soComFoto && !_soDoGrupo;
+    final contagem = semFiltro
         ? '${filtrados.length} ${filtrados.length == 1 ? 'livro' : 'livros'}'
         : '${filtrados.length} ${filtrados.length == 1 ? 'livro encontrado' : 'livros encontrados'}';
 
@@ -62,7 +64,7 @@ class _PesquisaViewState extends State<PesquisaView> {
               autofocus: false,
               onChanged: (v) => setState(() => _busca = v),
               decoration: InputDecoration(
-                hintText: 'Buscar por título, autor, tema, ano ou status…',
+                hintText: 'Buscar por título, autor, tema, ano, status ou grupo…',
                 prefixIcon: const Icon(Icons.search, color: bibPrimary),
                 suffixIcon: _busca.isNotEmpty
                     ? IconButton(
@@ -74,22 +76,28 @@ class _PesquisaViewState extends State<PesquisaView> {
               ),
             ),
           ),
-          // Filtro de foto
+          // Filtros de foto e de grupo de literatura
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
             child: Align(
               alignment: Alignment.centerLeft,
-              child: FilterChip(
-                label: const Text('Com foto'),
-                avatar: const Icon(Icons.photo, size: 16),
-                selected: _soComFoto,
-                onSelected: (v) => setState(() => _soComFoto = v),
-                selectedColor: bibPrimary.withOpacity(0.15),
-                checkmarkColor: bibPrimary,
-                labelStyle: TextStyle(
-                  color: _soComFoto ? bibPrimary : bibMuted,
-                  fontSize: 13,
-                ),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  _chipDeFiltro(
+                    rotulo: 'Com foto',
+                    icone: Icons.photo,
+                    ligado: _soComFoto,
+                    aoMudar: (v) => setState(() => _soComFoto = v),
+                  ),
+                  _chipDeFiltro(
+                    rotulo: 'Grupo de literatura',
+                    icone: Icons.menu_book,
+                    ligado: _soDoGrupo,
+                    aoMudar: (v) => setState(() => _soDoGrupo = v),
+                  ),
+                ],
               ),
             ),
           ),
@@ -182,10 +190,33 @@ class _PesquisaViewState extends State<PesquisaView> {
         overflow: TextOverflow.ellipsis);
   }
 
+  Widget _chipDeFiltro({
+    required String rotulo,
+    required IconData icone,
+    required bool ligado,
+    required ValueChanged<bool> aoMudar,
+  }) {
+    return FilterChip(
+      label: Text(rotulo),
+      avatar: Icon(icone, size: 16),
+      selected: ligado,
+      onSelected: aoMudar,
+      selectedColor: bibPrimary.withOpacity(0.15),
+      checkmarkColor: bibPrimary,
+      labelStyle: TextStyle(
+        color: ligado ? bibPrimary : bibMuted,
+        fontSize: 13,
+      ),
+    );
+  }
+
   List<Livro> _filtrar(List<Livro> livros, String busca) {
     var resultado = livros;
     if (_soComFoto) {
       resultado = resultado.where((l) => _fotosExistentes.contains(l.fotoId)).toList();
+    }
+    if (_soDoGrupo) {
+      resultado = resultado.where((l) => l.grupoLiteratura).toList();
     }
     if (busca.trim().isEmpty) return resultado;
     final termo = _normalizar(busca.trim());

@@ -174,7 +174,7 @@ class BibliotecaStore extends ChangeNotifier {
             emprestado: c.length > 4 && c[4] == '1',
             comentarios: c.length > 5 ? c[5] : '',
             local: c.length > 6 ? c[6] : '',
-            grupoLiteratura: c.length > 7 && c[7].trim() == '1',
+            grupos: c.length > 7 ? c[7].trim() : '0',
           );
         })
         .whereType<Livro>()
@@ -199,7 +199,7 @@ class BibliotecaStore extends ChangeNotifier {
         l.emprestado ? '1' : '0',
         l.comentarios,
         l.local,
-        l.grupoLiteratura ? '1' : '0',
+        l.grupos,
       ].join('\t');
     }).join('\n');
   }
