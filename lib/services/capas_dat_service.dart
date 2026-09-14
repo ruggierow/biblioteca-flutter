@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'documento_saf.dart';
 import 'foto_service.dart';
+import 'vinculo_pasta.dart';
 
 /// Traz as capas para o Android a partir do `biblioteca.dat`.
 ///
@@ -25,40 +24,21 @@ class CapasDatService {
   CapasDatService._();
   static final CapasDatService shared = CapasDatService._();
 
-  static const _prefUri = 'bibliotecaCapasDatUri';
-  static const _prefNome = 'bibliotecaCapasDatNome';
+  /// Nome fixo dentro da pasta vinculada — o mesmo nas quatro plataformas.
+  static const arquivoPadrao = 'biblioteca.dat';
 
   /// O `.dat` chega a dezenas de MB e vem pela rede: o prazo normal de 30 s
   /// não dá conta numa conexão ruim.
   static const _prazo = Duration(minutes: 5);
 
-  Future<String?> get uri async =>
-      (await SharedPreferences.getInstance()).getString(_prefUri);
+  /// O `.dat` sai da MESMA pasta do `biblioteca.txt`: não há mais um
+  /// "vincular" só para ele. Devolve null quando a pasta não tem o arquivo.
+  Future<String?> get uri => VinculoPasta.arquivo(arquivoPadrao);
 
   Future<String?> get nome async =>
-      (await SharedPreferences.getInstance()).getString(_prefNome);
+      await uri == null ? null : arquivoPadrao;
 
-  Future<bool> temAcesso() async {
-    final u = await uri;
-    if (u == null) return false;
-    return DocumentoSaf.temAcesso(u);
-  }
-
-  /// Abre o seletor do sistema. Devolve o nome do arquivo, ou null se cancelar.
-  Future<String?> escolher() async {
-    final doc = await DocumentoSaf.escolher();
-    if (doc == null) return null;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_prefUri, doc.uri);
-    await prefs.setString(_prefNome, doc.nome ?? 'biblioteca.dat');
-    return doc.nome ?? 'biblioteca.dat';
-  }
-
-  Future<void> desvincular() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_prefUri);
-    await prefs.remove(_prefNome);
-  }
+  Future<bool> temAcesso() async => await uri != null;
 
   /// Copia para o armazenamento local as capas que ainda não existem aqui e
   /// cujo `fotoId` pertence a algum livro da biblioteca atual.

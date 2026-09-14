@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/backup_automatico.dart';
 import '../services/documento_saf.dart';
+import '../services/grupos_json.dart';
+import '../services/vinculo_pasta.dart';
 import 'livro.dart';
 
 class BibliotecaStore extends ChangeNotifier {
@@ -19,6 +21,13 @@ class BibliotecaStore extends ChangeNotifier {
   DateTime? ultimaRecarga;
 
   static const _sep = ';';
+  /// Nome do arquivo dentro da pasta vinculada. Fixo: as quatro plataformas
+  /// usam o mesmo nome, e era o `biblioteca (1).txt` solto no Drive que fazia
+  /// a base do Android divergir da do iCloud.
+  static const arquivoPadrao = 'biblioteca.txt';
+
+  /// Chaves do vínculo por DOCUMENTO, das versões até a 1.9.0. Agora o vínculo
+  /// é com a pasta; estas só servem para detectar o modelo antigo e descartá-lo.
   static const _prefUri = 'bibliotecaDocUri';
   static const _prefNome = 'bibliotecaDocNome';
 
@@ -38,27 +47,42 @@ class BibliotecaStore extends ChangeNotifier {
   // no cache: o que se editava nunca voltava para o arquivo original — nem para
   // o Google Drive — e o vínculo sumia quando o Android limpava o cache.
 
-  /// Abre o seletor do sistema e vincula o documento escolhido.
+  /// Abre o seletor de PASTAS e vincula a pasta escolhida.
   /// Retorna false se o usuário cancelar.
   Future<bool> escolherEVincular() async {
     try {
-      final doc = await DocumentoSaf.escolher();
-      if (doc == null) return false;
+      if (!await VinculoPasta.escolher()) return false;
 
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_prefUri, doc.uri);
-      await prefs.setString(_prefNome, doc.nome ?? 'biblioteca.txt');
       await prefs.remove(_prefLegado);
+      await prefs.remove(_prefUri);
+      await prefs.remove(_prefNome);
 
-      arquivoUri = doc.uri;
-      arquivoNome = doc.nome ?? 'biblioteca.txt';
-      await carregarDoArquivo();
-      return true;
+      return await _abrirNaPasta();
     } catch (e) {
       erroMensagem = 'Erro ao vincular: $e';
       notifyListeners();
       return false;
     }
+  }
+
+  /// Resolve o `biblioteca.txt` dentro da pasta vinculada e carrega.
+  Future<bool> _abrirNaPasta() async {
+    final uri = await VinculoPasta.arquivo(arquivoPadrao);
+    if (uri == null) {
+      arquivoUri = null;
+      arquivoNome = null;
+      erroMensagem = 'Não há um $arquivoPadrao na pasta '
+          '"${VinculoPasta.nome ?? 'escolhida'}". '
+          'Escolha a pasta onde o arquivo está.';
+      notifyListeners();
+      return false;
+    }
+    arquivoUri = uri;
+    arquivoNome = arquivoPadrao;
+    await GruposJson.carregar();
+    await carregarDoArquivo();
+    return true;
   }
 
   Future<void> _restaurarArquivo() async {
@@ -76,33 +100,25 @@ class BibliotecaStore extends ChangeNotifier {
   Future<void> _restaurarArquivoInterno() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Vínculo antigo (caminho de cache): descarta e avisa.
-    if (prefs.getString(_prefUri) == null &&
-        prefs.getString(_prefLegado) != null) {
-      await prefs.remove(_prefLegado);
-      erroMensagem = 'O vínculo anterior não valia mais. '
-          'Toque em Selecionar arquivo e escolha o biblioteca.txt de novo.';
-      notifyListeners();
+    if (await VinculoPasta.restaurar()) {
+      await _abrirNaPasta();
       return;
     }
 
-    final uri = prefs.getString(_prefUri);
-    if (uri == null) return;
-
-    // A permissão pode ter sido revogada (o usuário limpou os dados do app,
-    // ou o provedor perdeu o documento).
-    if (!await DocumentoSaf.temAcesso(uri)) {
+    // Modelos antigos: o caminho de cache (até a 1.8.3) e o vínculo por
+    // DOCUMENTO (1.9.0). Nenhum dos dois vira uma pasta — só dá para descartar
+    // e pedir que o usuário escolha a pasta uma vez.
+    final tinhaVinculoAntigo = prefs.getString(_prefUri) != null ||
+        prefs.getString(_prefLegado) != null;
+    if (tinhaVinculoAntigo) {
+      await prefs.remove(_prefLegado);
       await prefs.remove(_prefUri);
       await prefs.remove(_prefNome);
-      erroMensagem = 'O acesso ao arquivo foi perdido. '
-          'Toque em Selecionar arquivo para vinculá-lo de novo.';
+      erroMensagem = 'Agora a Biblioteca vincula a PASTA inteira, e não cada '
+          'arquivo. Toque em Selecionar pasta e escolha a pasta onde está o '
+          'biblioteca.txt — o biblioteca.dat vem junto.';
       notifyListeners();
-      return;
     }
-
-    arquivoUri = uri;
-    arquivoNome = prefs.getString(_prefNome) ?? await DocumentoSaf.nome(uri);
-    await carregarDoArquivo();
   }
 
   Future<void> carregarDoArquivo() async {

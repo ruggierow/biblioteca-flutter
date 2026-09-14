@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/biblioteca_store.dart';
 import '../services/capas_dat_service.dart';
+import '../services/vinculo_pasta.dart';
 import '../theme.dart';
 
 class SincronizacaoView extends StatefulWidget {
@@ -22,24 +23,11 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
     _carregarEstadoCapas();
   }
 
+  /// As capas saem da MESMA pasta do biblioteca.txt: não há mais vínculo
+  /// próprio para o .dat, só a pergunta de se ele está lá.
   Future<void> _carregarEstadoCapas() async {
-    final temAcesso = await CapasDatService.shared.temAcesso();
-    if (temAcesso) {
-      final n = await CapasDatService.shared.nome;
-      if (mounted) setState(() => _capasNome = n);
-    } else {
-      await CapasDatService.shared.desvincular();
-    }
-  }
-
-  Future<void> _vincularCapas() async {
-    final nome = await CapasDatService.shared.escolher();
-    if (nome != null && mounted) setState(() => _capasNome = nome);
-  }
-
-  Future<void> _desvincularCapas() async {
-    await CapasDatService.shared.desvincular();
-    if (mounted) setState(() { _capasNome = null; _resultadoSync = null; });
+    final n = await CapasDatService.shared.nome;
+    if (mounted) setState(() => _capasNome = n);
   }
 
   Future<void> _sincronizar() async {
@@ -103,10 +91,14 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
               children: [
                 ListTile(
                   leading: const Icon(Icons.folder_open, color: bibPrimary),
-                  title: Text(store.arquivoNome == null
-                      ? 'Selecionar biblioteca.txt'
-                      : 'Trocar arquivo'),
-                  onTap: () => _selecionarArquivo(context, store),
+                  title: Text(VinculoPasta.vinculada
+                      ? 'Trocar pasta'
+                      : 'Selecionar pasta'),
+                  subtitle: VinculoPasta.nome == null
+                      ? null
+                      : Text(VinculoPasta.nome!,
+                          style: const TextStyle(color: bibMuted, fontSize: 12)),
+                  onTap: () => _selecionarPasta(context, store),
                   contentPadding: EdgeInsets.zero,
                 ),
                 const Divider(height: 1),
@@ -130,18 +122,14 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (_capasNome == null) ...[
-                  const Text(
-                    'Vincule o biblioteca.dat — o mesmo arquivo que o Mac e o iPhone '
-                    'usam — para trazer as capas dos livros para este aparelho. '
-                    'Ele fica ao lado do biblioteca.txt.',
-                    style: TextStyle(color: bibMuted, fontSize: 13),
-                  ),
-                  const SizedBox(height: 12),
-                  ListTile(
-                    leading: const Icon(Icons.photo_library, color: bibPrimary),
-                    title: const Text('Vincular arquivo de capas'),
-                    onTap: _vincularCapas,
-                    contentPadding: EdgeInsets.zero,
+                  Text(
+                    VinculoPasta.vinculada
+                        ? 'Não há um biblioteca.dat nesta pasta. É o arquivo em '
+                            'que o Mac e o iPhone guardam todas as capas; ele '
+                            'fica ao lado do biblioteca.txt.'
+                        : 'Vincule a pasta primeiro. As capas vêm do '
+                            'biblioteca.dat que está dentro dela.',
+                    style: const TextStyle(color: bibMuted, fontSize: 13),
                   ),
                 ] else ...[
                   _InfoRow(label: 'Arquivo', valor: _capasNome!),
@@ -165,11 +153,6 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
                           label: Text(_sincronizando ? 'Sincronizando…' : 'Sincronizar agora'),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      TextButton(
-                        onPressed: _desvincularCapas,
-                        child: const Text('Desvincular', style: TextStyle(color: bibMuted)),
-                      ),
                     ],
                   ),
                 ],
@@ -186,17 +169,17 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
               children: const [
                 _Instrucao(
                   numero: '1',
-                  texto: 'No computador, mova o biblioteca.txt para a pasta do Google Drive e aguarde sincronizar.',
+                  texto: 'No computador, ponha o biblioteca.txt e o biblioteca.dat numa pasta do Google Drive e aguarde sincronizar.',
                 ),
                 SizedBox(height: 10),
                 _Instrucao(
                   numero: '2',
-                  texto: 'No app Google Drive do Android, encontre o biblioteca.txt, toque em ⋮ e selecione "Tornar disponível offline".',
+                  texto: 'No app Google Drive do Android, encontre essa pasta, toque em ⋮ e selecione "Tornar disponível offline".',
                 ),
                 SizedBox(height: 10),
                 _Instrucao(
                   numero: '3',
-                  texto: 'Aqui em Sincronização, toque em "Selecionar arquivo", navegue até Drive no menu lateral e selecione o biblioteca.txt.',
+                  texto: 'Aqui em Sincronização, toque em "Selecionar pasta", navegue até Drive no menu lateral e escolha a pasta. O Android não deixa escolher "Meu Drive" direto: tem de ser uma pasta dentro dele.',
                 ),
                 SizedBox(height: 10),
                 _Instrucao(
@@ -235,8 +218,10 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
   String _hora(DateTime dt) =>
       '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
-  Future<void> _selecionarArquivo(BuildContext context, BibliotecaStore store) async {
+  Future<void> _selecionarPasta(BuildContext context, BibliotecaStore store) async {
     await store.escolherEVincular();
+    await _carregarEstadoCapas();
+    if (mounted) setState(() {});
   }
 }
 

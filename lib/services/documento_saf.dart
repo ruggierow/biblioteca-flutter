@@ -2,13 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/services.dart';
 
-/// Referência a um documento escolhido pelo usuário via SAF.
-class DocumentoEscolhido {
-  final String uri;
-  final String? nome;
-  const DocumentoEscolhido({required this.uri, this.nome});
-}
-
 /// Acesso ao arquivo pelo Storage Access Framework do Android.
 ///
 /// Substitui o `file_picker`, que devolvia o caminho de uma CÓPIA no cache do
@@ -18,18 +11,14 @@ class DocumentoEscolhido {
 /// Aqui o que se guarda é o `content://` com permissão persistente — o
 /// equivalente Android do security-scoped bookmark usado no app do iPhone.
 /// A implementação está em `MainActivity.kt`.
+///
+/// Desde a 1.9.1 o URI não vem mais de um seletor próprio: vem de
+/// [PastaSaf.arquivo], que resolve o arquivo dentro da PASTA vinculada. Por
+/// isso aqui só sobraram ler e gravar — escolher, nome e temAcesso viraram
+/// responsabilidade do vínculo com a pasta.
 class DocumentoSaf {
   DocumentoSaf._();
   static const _canal = MethodChannel('biblioteca/saf');
-
-  /// Abre o seletor do sistema. Devolve `null` se o usuário cancelar.
-  static Future<DocumentoEscolhido?> escolher() async {
-    final r = await _canal.invokeMapMethod<String, dynamic>('escolherDocumento');
-    if (r == null) return null;
-    final uri = r['uri'] as String?;
-    if (uri == null) return null;
-    return DocumentoEscolhido(uri: uri, nome: r['nome'] as String?);
-  }
 
   /// Prazo para as operações que podem falar com a rede.
   ///
@@ -54,16 +43,4 @@ class DocumentoSaf {
         .timeout(_prazo);
   }
 
-  /// O app ainda tem permissão persistente de leitura e escrita?
-  static Future<bool> temAcesso(String uri) async {
-    return await _canal.invokeMethod<bool>('temAcesso', {'uri': uri}) ?? false;
-  }
-
-  /// Nome visível do documento, para mostrar na tela.
-  static Future<String?> nome(String uri) async {
-    return _canal.invokeMethod<String>('nome', {'uri': uri}).timeout(
-      _prazo,
-      onTimeout: () => null, // é só rótulo de tela; não vale travar por isso
-    );
-  }
 }
