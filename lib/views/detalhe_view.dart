@@ -236,43 +236,14 @@ final reEndereco = RegExp(
     r'(?:https?://|kindle://|www\.)[^\s]+',
     caseSensitive: false);
 
-String? _asinLimpo(String? valor) {
-  final f = (valor ?? '').toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
-  return f.length == 10 ? f : null;
-}
-
-/// O ASIN dentro de um endereço: no parâmetro `asin`, ou no caminho logo depois
-/// de /dp/, /gp/ ou /product/ — a forma que a Amazon usa.
-String? asinDoEndereco(Uri u) {
-  final porParametro =
-      _asinLimpo(u.queryParameters['asin'] ?? u.queryParameters['ASIN']);
-  if (porParametro != null) return porParametro;
-  final partes = u.pathSegments.where((p) => p.isNotEmpty).toList();
-  for (final marca in const ['dp', 'gp', 'product']) {
-    final i = partes.indexOf(marca);
-    if (i >= 0 && i + 1 < partes.length) {
-      final a = _asinLimpo(partes[i + 1]);
-      if (a != null) return a;
-    }
-  }
-  for (final p in partes) {
-    final a = _asinLimpo(p);
-    if (a != null) return a;
-  }
-  return null;
-}
-
-/// Para onde o toque leva. Quando o endereço carrega um ASIN, vai para o
-/// aplicativo Kindle — mesma regra do app do iPhone. Senão, para ele mesmo.
+/// Para onde o toque leva. O endereco vale por si: o aplicativo Kindle versao
+/// 7.x nao abre mais livro por kindle://book?action=open — o pacote inteiro nao
+/// tem vestigio desse tratamento, so de um link de divulgacao. Converter para
+/// ele abria o Kindle na BIBLIOTECA, o que parece defeito. Verificado em
+/// 06/10/2026 no app 7.68.
 Uri destinoDoEndereco(String bruto) {
   final texto = bruto.toLowerCase().startsWith('www.') ? 'https://$bruto' : bruto;
-  final u = Uri.tryParse(texto);
-  if (u == null) return Uri.parse(texto);
-  final asin = asinDoEndereco(u);
-  if (asin != null) {
-    return Uri.parse('kindle://book?action=open&asin=$asin');
-  }
-  return u;
+  return Uri.tryParse(texto) ?? Uri.parse(texto);
 }
 
 class _ComentariosView extends StatelessWidget {

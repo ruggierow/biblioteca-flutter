@@ -198,26 +198,16 @@ void main() {
   });
 
   group('Links nos comentários', () {
-    test('endereço da Amazon leva ao aplicativo Kindle', () {
+    test('o endereço vale por si — nao ha mais conversao para kindle://', () {
       final d = destinoDoEndereco('https://www.amazon.com.br/dp/B07NV3JLMG');
-      expect(d.scheme, 'kindle');
-      expect(d.queryParameters['asin'], 'B07NV3JLMG');
-    });
-
-    test('kindle:// com book_id também é reconhecido pelo caminho', () {
-      final d = destinoDoEndereco('kindle://book/?action=open&book_id=B07NV3JLMG');
-      expect(d.scheme, 'kindle');
-    });
-
-    test('kindle:// com asin no parâmetro', () {
-      final d = destinoDoEndereco('kindle://book?action=open&asin=B07NV3JLMG');
-      expect(d.queryParameters['asin'], 'B07NV3JLMG');
-    });
-
-    test('endereço sem ASIN aponta para ele mesmo', () {
-      final d = destinoDoEndereco('https://exemplo.com.br/pagina');
       expect(d.scheme, 'https');
-      expect(d.host, 'exemplo.com.br');
+      expect(d.host, 'www.amazon.com.br');
+      expect(d.path, '/dp/B07NV3JLMG');
+    });
+
+    test('kindle:// escrito a mao continua valendo como esta', () {
+      final d = destinoDoEndereco('kindle://book?action=open&asin=B07NV3JLMG');
+      expect(d.scheme, 'kindle');
     });
 
     test('www ganha https', () {
