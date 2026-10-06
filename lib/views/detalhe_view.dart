@@ -231,17 +231,57 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
+/// Endereços reconhecidos nos comentários: http, https, www e kindle://.
+final reEndereco = RegExp(
+    r'(?:https?://|kindle://|www\.)[^\s]+',
+    caseSensitive: false);
+
+String? _asinLimpo(String? valor) {
+  final f = (valor ?? '').toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]'), '');
+  return f.length == 10 ? f : null;
+}
+
+/// O ASIN dentro de um endereço: no parâmetro `asin`, ou no caminho logo depois
+/// de /dp/, /gp/ ou /product/ — a forma que a Amazon usa.
+String? asinDoEndereco(Uri u) {
+  final porParametro =
+      _asinLimpo(u.queryParameters['asin'] ?? u.queryParameters['ASIN']);
+  if (porParametro != null) return porParametro;
+  final partes = u.pathSegments.where((p) => p.isNotEmpty).toList();
+  for (final marca in const ['dp', 'gp', 'product']) {
+    final i = partes.indexOf(marca);
+    if (i >= 0 && i + 1 < partes.length) {
+      final a = _asinLimpo(partes[i + 1]);
+      if (a != null) return a;
+    }
+  }
+  for (final p in partes) {
+    final a = _asinLimpo(p);
+    if (a != null) return a;
+  }
+  return null;
+}
+
+/// Para onde o toque leva. Quando o endereço carrega um ASIN, vai para o
+/// aplicativo Kindle — mesma regra do app do iPhone. Senão, para ele mesmo.
+Uri destinoDoEndereco(String bruto) {
+  final texto = bruto.toLowerCase().startsWith('www.') ? 'https://$bruto' : bruto;
+  final u = Uri.tryParse(texto);
+  if (u == null) return Uri.parse(texto);
+  final asin = asinDoEndereco(u);
+  if (asin != null) {
+    return Uri.parse('kindle://book?action=open&asin=$asin');
+  }
+  return u;
+}
+
 class _ComentariosView extends StatelessWidget {
   final String texto;
   const _ComentariosView({required this.texto});
 
   @override
   Widget build(BuildContext context) {
-    // Detecta URLs simples para tornar clicáveis
-    final urlRegex = RegExp(
-        r'https?://[^\s]+|www\.[^\s]+',
-        caseSensitive: false);
-    final matches = urlRegex.allMatches(texto);
+    final matches = reEndereco.allMatches(texto);
 
     if (matches.isEmpty) {
       return SelectableText(texto,
@@ -257,8 +297,8 @@ class _ComentariosView extends StatelessWidget {
       final url = m.group(0)!;
       spans.add(WidgetSpan(
         child: GestureDetector(
-          onTap: () => launchUrl(
-              Uri.parse(url.startsWith('http') ? url : 'https://$url')),
+          onTap: () => launchUrl(destinoDoEndereco(url),
+              mode: LaunchMode.externalApplication),
           child: Text(url,
               style: const TextStyle(
                   color: bibPrimary, decoration: TextDecoration.underline)),

@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:biblioteca/models/biblioteca_store.dart';
 import 'package:biblioteca/models/livro.dart';
+import 'package:biblioteca/views/detalhe_view.dart';
 import 'package:biblioteca/models/filtro_pesquisa.dart';
 import 'package:biblioteca/models/grupos_store.dart';
 
@@ -193,6 +194,45 @@ void main() {
       final c = f.copia()..status = FiltroStatus.emprestados;
       expect(c.texto, 'abc');
       expect(f.status, FiltroStatus.todos);
+    });
+  });
+
+  group('Links nos comentários', () {
+    test('endereço da Amazon leva ao aplicativo Kindle', () {
+      final d = destinoDoEndereco('https://www.amazon.com.br/dp/B07NV3JLMG');
+      expect(d.scheme, 'kindle');
+      expect(d.queryParameters['asin'], 'B07NV3JLMG');
+    });
+
+    test('kindle:// com book_id também é reconhecido pelo caminho', () {
+      final d = destinoDoEndereco('kindle://book/?action=open&book_id=B07NV3JLMG');
+      expect(d.scheme, 'kindle');
+    });
+
+    test('kindle:// com asin no parâmetro', () {
+      final d = destinoDoEndereco('kindle://book?action=open&asin=B07NV3JLMG');
+      expect(d.queryParameters['asin'], 'B07NV3JLMG');
+    });
+
+    test('endereço sem ASIN aponta para ele mesmo', () {
+      final d = destinoDoEndereco('https://exemplo.com.br/pagina');
+      expect(d.scheme, 'https');
+      expect(d.host, 'exemplo.com.br');
+    });
+
+    test('www ganha https', () {
+      expect(destinoDoEndereco('www.exemplo.com').scheme, 'https');
+    });
+
+    test('a expressão acha endereço no meio da nota', () {
+      const nota = 'Comprei em 2024. https://www.amazon.com.br/dp/B07NV3JLMG — reler';
+      final m = reEndereco.allMatches(nota).toList();
+      expect(m.length, 1);
+      expect(m.first.group(0), 'https://www.amazon.com.br/dp/B07NV3JLMG');
+    });
+
+    test('acha também o kindle://, que antes ficava texto morto', () {
+      expect(reEndereco.allMatches('ver kindle://book?action=open&asin=B07NV3JLMG').length, 1);
     });
   });
 }

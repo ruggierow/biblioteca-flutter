@@ -59,5 +59,17 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+
+        <!-- Desde o Android 11 um app so "enxerga" outro se o declarar aqui.
+             Sem isto o link kindle:// dos comentarios nao abre o aplicativo
+             Kindle, e a falha e SILENCIOSA: launchUrl simplesmente nao faz nada. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="kindle"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
+        </intent>
     </queries>
 </manifest>
