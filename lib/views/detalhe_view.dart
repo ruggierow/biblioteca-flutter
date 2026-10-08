@@ -125,7 +125,7 @@ class _DetalheViewState extends State<DetalheView> {
             const SizedBox(height: 12),
             _Secao(
               titulo: 'Comentários',
-              child: _ComentariosView(
+              child: ComentariosView(
                   texto: livro.comentarios, titulo: livro.titulo),
             ),
           ],
@@ -255,10 +255,10 @@ String? rotuloAntesDoLink(String antes) {
   return m?.group(1)?.trim();
 }
 
-class _ComentariosView extends StatelessWidget {
+class ComentariosView extends StatelessWidget {
   final String texto;
   final String titulo;
-  const _ComentariosView({required this.texto, required this.titulo});
+  const ComentariosView({super.key, required this.texto, required this.titulo});
 
   /// O aplicativo Kindle abre na BIBLIOTECA, nunca no livro: nao ha rota de
   /// busca no esquema `kindle://`. Entao, ao tocar nesse link, o titulo vai
