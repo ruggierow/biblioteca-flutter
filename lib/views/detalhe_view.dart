@@ -1,5 +1,5 @@
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../models/grupos_store.dart';
 import '../models/livro.dart';
@@ -125,7 +125,8 @@ class _DetalheViewState extends State<DetalheView> {
             const SizedBox(height: 12),
             _Secao(
               titulo: 'Comentários',
-              child: _ComentariosView(texto: livro.comentarios),
+              child: _ComentariosView(
+                  texto: livro.comentarios, titulo: livro.titulo),
             ),
           ],
         ],
@@ -248,7 +249,27 @@ Uri destinoDoEndereco(String bruto) {
 
 class _ComentariosView extends StatelessWidget {
   final String texto;
-  const _ComentariosView({required this.texto});
+  final String titulo;
+  const _ComentariosView({required this.texto, required this.titulo});
+
+  /// O aplicativo Kindle abre na BIBLIOTECA, nunca no livro: nao ha rota de
+  /// busca no esquema `kindle://`. Entao, ao tocar nesse link, o titulo vai
+  /// para a area de transferencia e basta colar na busca do Kindle.
+  ///
+  /// So no link do Kindle. O do leitor da web abre o livro sozinho, e mexer na
+  /// area de transferencia sem necessidade apagaria o que o usuario copiou.
+  Future<void> _abrir(BuildContext context, String url) async {
+    if (url.toLowerCase().startsWith('kindle:')) {
+      await Clipboard.setData(ClipboardData(text: titulo));
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Título copiado: $titulo — cole na busca do Kindle.'),
+          duration: const Duration(seconds: 5),
+        ));
+      }
+    }
+    await launchUrl(destinoDoEndereco(url), mode: LaunchMode.externalApplication);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -268,8 +289,7 @@ class _ComentariosView extends StatelessWidget {
       final url = m.group(0)!;
       spans.add(WidgetSpan(
         child: GestureDetector(
-          onTap: () => launchUrl(destinoDoEndereco(url),
-              mode: LaunchMode.externalApplication),
+          onTap: () => _abrir(context, url),
           child: Text(url,
               style: const TextStyle(
                   color: bibPrimary, decoration: TextDecoration.underline)),
