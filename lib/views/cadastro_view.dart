@@ -114,8 +114,14 @@ class _CadastroViewState extends State<CadastroView> {
           ),
         ],
       ),
+        // Android 15 impoe o modo borda a borda para quem mira o SDK 35+: o
+        // app desenha POR BAIXO da barra de navegacao e cabe a ele reservar o
+        // espaco. Sem isto, a ultima secao fica debaixo da barra e a lista nem
+        // rola — ela acha que o conteudo coube. Medido no Galaxy A57 em
+        // 08/10/2026: os links do comentario apareciam e nao aceitavam toque.
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+            16, 16, 16, 16 + MediaQuery.viewPaddingOf(context).bottom),
         children: [
           // ISBN
           _Secao(

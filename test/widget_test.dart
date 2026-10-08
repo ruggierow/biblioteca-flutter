@@ -221,21 +221,27 @@ void main() {
       expect(m.first.group(0), 'https://www.amazon.com.br/dp/B07NV3JLMG');
     });
 
-    test('o rótulo antes do endereço vira o texto do toque', () {
-      expect(rotuloAntesDoLink('Ler: '), 'Ler');
-      expect(rotuloAntesDoLink(' | Kindle: '), 'Kindle');
+    test('o rótulo vira o toque e NÃO sobra pedaço dele no texto', () {
+      // 08/10/2026: o corte era pelo tamanho do rótulo e sobrava "Le" antes de
+      // "Ler" na tela do Samsung. O prefixo tem de sair inteiro.
+      final a = separarRotulo('Ler: ');
+      expect(a?.rotulo, 'Ler');
+      expect(a?.prefixo, '');
+
+      final b = separarRotulo(' | Kindle: ');
+      expect(b?.rotulo, 'Kindle');
+      expect(b?.prefixo, ' | ');
     });
 
     test('o rótulo para em pontuação de frase', () {
-      // Sem isso, "…funesto. Ler: http…" devolveria meia frase como rótulo e
-      // deixaria um pedaço de palavra solto na tela.
-      expect(rotuloAntesDoLink('Noite sem fim, um pressentimento funesto. Ler: '),
-          'Ler');
+      final r = separarRotulo('Noite sem fim, um pressentimento funesto. Ler: ');
+      expect(r?.rotulo, 'Ler');
+      expect(r?.prefixo, 'Noite sem fim, um pressentimento funesto. ');
     });
 
     test('sem rótulo não inventa um', () {
-      expect(rotuloAntesDoLink('comprei em 2019 '), isNull);
-      expect(rotuloAntesDoLink(''), isNull);
+      expect(separarRotulo('comprei em 2019 '), isNull);
+      expect(separarRotulo(''), isNull);
     });
 
     test('acha também o kindle://, que antes ficava texto morto', () {

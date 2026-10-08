@@ -48,8 +48,14 @@ class _DetalheViewState extends State<DetalheView> {
           ),
         ],
       ),
+        // Android 15 impoe o modo borda a borda para quem mira o SDK 35+: o
+        // app desenha POR BAIXO da barra de navegacao e cabe a ele reservar o
+        // espaco. Sem isto, a ultima secao fica debaixo da barra e a lista nem
+        // rola — ela acha que o conteudo coube. Medido no Galaxy A57 em
+        // 08/10/2026: os links do comentario apareciam e nao aceitavam toque.
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+            16, 16, 16, 16 + MediaQuery.viewPaddingOf(context).bottom),
         children: [
           // Foto da capa
           _CapaSection(capa: _capa),
@@ -247,12 +253,24 @@ Uri destinoDoEndereco(String bruto) {
   return Uri.tryParse(texto) ?? Uri.parse(texto);
 }
 
-/// Devolve o rotulo escrito logo antes do endereco ("Ler: http…" -> "Ler"),
-/// ou nulo quando nao ha. Para em pontuacao de frase: sem isso, um comentario
+/// Separa "texto comum" de "Rotulo:" imediatamente antes de um endereco.
+///
+/// Devolve o texto que fica na tela e o rotulo que vira o toque — ou nulo
+/// quando nao ha rotulo. Para em pontuacao de frase: sem isso, um comentario
 /// como "…funesto. Ler: http…" devolveria meia frase como rotulo.
-String? rotuloAntesDoLink(String antes) {
+///
+/// O prefixo e cortado pelo INICIO DA CORRESPONDENCIA, nao pelo tamanho do
+/// rotulo: em 08/10/2026 eu cortei por tamanho e sobrou "Le" antes de "Ler" e
+/// "Ki" antes de "Kindle" na tela do Samsung — o corte comia o fim do rotulo e
+/// deixava o comeco.
+({String prefixo, String rotulo})? separarRotulo(String antes) {
   final m = RegExp(r'([^|;\u00b7.,!?\n]{1,30}?)\s*:\s*$').firstMatch(antes);
-  return m?.group(1)?.trim();
+  if (m == null) return null;
+  final rotulo = (m.group(1) ?? '').trim();
+  if (rotulo.isEmpty) return null;
+  var prefixo = antes.substring(0, m.start).replaceFirst(RegExp(r'[^\S\n]+$'), '');
+  if (prefixo.isNotEmpty) prefixo += ' ';
+  return (prefixo: prefixo, rotulo: rotulo);
 }
 
 class ComentariosView extends StatelessWidget {
@@ -298,14 +316,11 @@ class ComentariosView extends StatelessWidget {
       // quebra linha no meio da URL, e o resto da secao saia da tela — o
       // usuario via metade do comentario e nem chegava ao link do Kindle.
       // Quando o texto traz "Rotulo: endereco", o rotulo vira o toque.
-      final rot = rotuloAntesDoLink(antes);
+      final sep = separarRotulo(antes);
       String nome;
-      if (rot != null) {
-        nome = rot;
-        antes = antes.substring(0, antes.length - rot.length).replaceFirst(
-            RegExp(r'\s*:\s*$'), '');
-        antes = antes.replaceFirst(RegExp(r'[^\S\n]*$'), '');
-        if (antes.isNotEmpty) antes += ' ';
+      if (sep != null) {
+        nome = sep.rotulo;
+        antes = sep.prefixo;
       } else if (url.toLowerCase().startsWith('kindle:')) {
         nome = 'app Kindle';
       } else {
