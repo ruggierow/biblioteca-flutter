@@ -247,6 +247,14 @@ Uri destinoDoEndereco(String bruto) {
   return Uri.tryParse(texto) ?? Uri.parse(texto);
 }
 
+/// Devolve o rotulo escrito logo antes do endereco ("Ler: http…" -> "Ler"),
+/// ou nulo quando nao ha. Para em pontuacao de frase: sem isso, um comentario
+/// como "…funesto. Ler: http…" devolveria meia frase como rotulo.
+String? rotuloAntesDoLink(String antes) {
+  final m = RegExp(r'([^|;\u00b7.,!?\n]{1,30}?)\s*:\s*$').firstMatch(antes);
+  return m?.group(1)?.trim();
+}
+
 class _ComentariosView extends StatelessWidget {
   final String texto;
   final String titulo;
@@ -283,14 +291,36 @@ class _ComentariosView extends StatelessWidget {
     final spans = <InlineSpan>[];
     int ultimo = 0;
     for (final m in matches) {
-      if (m.start > ultimo) {
-        spans.add(TextSpan(text: texto.substring(ultimo, m.start)));
-      }
+      var antes = m.start > ultimo ? texto.substring(ultimo, m.start) : '';
       final url = m.group(0)!;
+
+      // Mostrar o ENDERECO inteiro estourava a largura: um WidgetSpan nao
+      // quebra linha no meio da URL, e o resto da secao saia da tela — o
+      // usuario via metade do comentario e nem chegava ao link do Kindle.
+      // Quando o texto traz "Rotulo: endereco", o rotulo vira o toque.
+      final rot = rotuloAntesDoLink(antes);
+      String nome;
+      if (rot != null) {
+        nome = rot;
+        antes = antes.substring(0, antes.length - rot.length).replaceFirst(
+            RegExp(r'\s*:\s*$'), '');
+        antes = antes.replaceFirst(RegExp(r'[^\S\n]*$'), '');
+        if (antes.isNotEmpty) antes += ' ';
+      } else if (url.toLowerCase().startsWith('kindle:')) {
+        nome = 'app Kindle';
+      } else {
+        nome = url
+            .replaceFirst(RegExp(r'^[a-z]+://', caseSensitive: false), '')
+            .split('/')
+            .first
+            .replaceFirst(RegExp(r'^www\.', caseSensitive: false), '');
+      }
+
+      if (antes.isNotEmpty) spans.add(TextSpan(text: antes));
       spans.add(WidgetSpan(
         child: GestureDetector(
           onTap: () => _abrir(context, url),
-          child: Text(url,
+          child: Text(nome,
               style: const TextStyle(
                   color: bibPrimary, decoration: TextDecoration.underline)),
         ),

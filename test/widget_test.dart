@@ -221,6 +221,23 @@ void main() {
       expect(m.first.group(0), 'https://www.amazon.com.br/dp/B07NV3JLMG');
     });
 
+    test('o rótulo antes do endereço vira o texto do toque', () {
+      expect(rotuloAntesDoLink('Ler: '), 'Ler');
+      expect(rotuloAntesDoLink(' | Kindle: '), 'Kindle');
+    });
+
+    test('o rótulo para em pontuação de frase', () {
+      // Sem isso, "…funesto. Ler: http…" devolveria meia frase como rótulo e
+      // deixaria um pedaço de palavra solto na tela.
+      expect(rotuloAntesDoLink('Noite sem fim, um pressentimento funesto. Ler: '),
+          'Ler');
+    });
+
+    test('sem rótulo não inventa um', () {
+      expect(rotuloAntesDoLink('comprei em 2019 '), isNull);
+      expect(rotuloAntesDoLink(''), isNull);
+    });
+
     test('acha também o kindle://, que antes ficava texto morto', () {
       expect(reEndereco.allMatches('ver kindle://book?action=open&asin=B07NV3JLMG').length, 1);
     });
