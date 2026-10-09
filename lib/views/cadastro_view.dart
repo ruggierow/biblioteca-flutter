@@ -13,6 +13,23 @@ import '../theme.dart';
 import 'capa_camera_view.dart';
 import 'scanner_view.dart';
 
+/// Guarda o ISBN no campo de comentarios, no padrao "Rotulo: valor" que ali ja
+/// se usa para Editora, Ler e Kindle. Nao vira coluna nova porque o leitor do
+/// motor-web DESCARTA linha com 9 campos: o livro sumiria no Mac e no Windows,
+/// e o salvamento automatico de la apagaria do arquivo.
+///
+/// Idempotente: reler o mesmo livro nao duplica a marca, e reler com outro
+/// numero substitui — a leitura mais recente vence.
+String comISBN(String texto, String isbn) {
+  final limpo = isbn.replaceAll(RegExp(r'[^0-9Xx]'), '').toUpperCase();
+  if (limpo.isEmpty) return texto;
+  final t = texto.trim();
+  final marca = RegExp(r'ISBN:\s*[0-9Xx-]+');
+  if (marca.hasMatch(t)) return t.replaceFirst(marca, 'ISBN: $limpo');
+  return t.isEmpty ? 'ISBN: $limpo' : '$t | ISBN: $limpo';
+}
+
+
 class CadastroView extends StatefulWidget {
   final Livro? livroEditando;
   final String? isbnInicial;
@@ -601,12 +618,14 @@ class _CadastroViewState extends State<CadastroView> {
           if (r.comentarios.isNotEmpty && _comentariosCtrl.text.trim().isEmpty) {
             _comentariosCtrl.text = r.comentarios;
           }
+          _comentariosCtrl.text = comISBN(_comentariosCtrl.text, _isbnCtrl.text);
           _isbnStatus = 'Preenchido com sucesso.';
           _isbnSucesso = true;
         });
       } else {
         setState(() {
-          _isbnStatus = 'ISBN não encontrado em nenhuma base de dados.';
+          _comentariosCtrl.text = comISBN(_comentariosCtrl.text, _isbnCtrl.text);
+          _isbnStatus = 'ISBN não encontrado, mas o número foi guardado.';
           _isbnSucesso = false;
         });
       }
