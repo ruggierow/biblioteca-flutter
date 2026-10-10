@@ -17,6 +17,20 @@ class BibliotecaStore extends ChangeNotifier {
   String? arquivoUri;
 
   String? erroMensagem;
+
+  /// Verdadeiro desde o nascimento do store ate a primeira carga terminar,
+  /// com ou sem sucesso.
+  ///
+  /// Sem isto a lista mostrava "Nenhum livro cadastrado" enquanto o arquivo
+  /// ainda vinha da nuvem — afirmando que a biblioteca esta vazia quando ela
+  /// so nao chegou. A tela parecia pronta e nao estava.
+  bool carregando = true;
+
+  void _terminouDeCarregar() {
+    if (!carregando) return;
+    carregando = false;
+    notifyListeners();
+  }
   DateTime? ultimaGravacao;
   DateTime? ultimaRecarga;
 
@@ -37,7 +51,10 @@ class BibliotecaStore extends ChangeNotifier {
   static const _prefLegado = 'bibliotecaFilePath';
 
   BibliotecaStore() {
-    _restaurarArquivo();
+    // `_restaurarArquivo` nao lanca: ele mesmo trata as falhas e escreve em
+    // erroMensagem. O `whenComplete` fecha o aviso em TODOS os desfechos —
+    // inclusive aquele em que nao ha pasta vinculada e nada e lido.
+    _restaurarArquivo().whenComplete(_terminouDeCarregar);
   }
 
   // MARK: - Vínculo com arquivo

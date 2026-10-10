@@ -127,7 +127,25 @@ class _PesquisaViewState extends State<PesquisaView> {
               ),
             ),
           Expanded(
-            child: filtrados.isEmpty
+            // "Nenhum livro cadastrado" so vale depois que a carga terminou.
+            // Dito antes, afirma que a biblioteca esta vazia quando ela apenas
+            // ainda nao chegou da nuvem — e o arquivo pode demorar.
+            child: store.carregando && filtrados.isEmpty
+                ? const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(strokeWidth: 3)),
+                        SizedBox(height: 14),
+                        Text('Carregando a biblioteca…',
+                            style: TextStyle(color: bibMuted, fontSize: 16)),
+                      ],
+                    ),
+                  )
+                : filtrados.isEmpty
                 ? Center(
                     child: Text(
                       _filtro.ativo ? 'Nenhum resultado' : 'Nenhum livro cadastrado',
