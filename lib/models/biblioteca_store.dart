@@ -208,6 +208,7 @@ class BibliotecaStore extends ChangeNotifier {
             comentarios: c.length > 5 ? c[5] : '',
             local: c.length > 6 ? c[6] : '',
             grupos: c.length > 7 ? c[7].trim() : '0',
+            pais: c.length > 8 ? c[8].trim().toUpperCase() : '',
           );
         })
         .whereType<Livro>()
@@ -224,7 +225,7 @@ class BibliotecaStore extends ChangeNotifier {
 
   String serializar() {
     return livros.map((l) {
-      return [
+      final campos = [
         l.titulo,
         l.autores.join('; '),
         l.temas.join('; '),
@@ -233,7 +234,12 @@ class BibliotecaStore extends ChangeNotifier {
         l.comentarios,
         l.local,
         l.grupos,
-      ].join('\t');
+      ];
+      // A 9a coluna so e escrita quando ha pais. Escrever sempre deixaria um
+      // tabulador no fim de toda linha e faria o arquivo inteiro aparecer como
+      // alterado a cada gravacao.
+      if (l.pais.trim().isNotEmpty) campos.add(l.pais.trim());
+      return campos.join('\t');
     }).join('\n');
   }
 }

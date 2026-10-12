@@ -16,6 +16,16 @@ class Livro {
   /// participação em grupos que este motor ainda não sabe representar.
   final String grupos;
 
+  /// Coluna 9: o código ISO de 2 letras do país do livro ("BR", "JP"). Vazio
+  /// quando não se sabe.
+  ///
+  /// Esta versão apenas LÊ e DEVOLVE o campo — nada o mostra ainda. É de
+  /// propósito: até a 1.9.13 o motor-web descartava em silêncio a linha com 9
+  /// colunas, e como o Mac salva sozinho, o dado entrando antes faria a
+  /// biblioteca abrir vazia e o vazio ser gravado por cima. Primeiro os quatro
+  /// aprendem a preservar; só depois o dado entra.
+  final String pais;
+
   const Livro({
     required this.id,
     required this.titulo,
@@ -26,6 +36,7 @@ class Livro {
     this.comentarios = '',
     this.local = '',
     this.grupos = '0',
+    this.pais = '',
   });
 
   bool get grupoLiteratura => participaDeGrupo(grupos);
@@ -86,6 +97,7 @@ class Livro {
     String? grupos,
     List<int>? listaGrupos,
     bool? grupoLiteratura,
+    String? pais,
   }) {
     return Livro(
       id: id,
@@ -102,6 +114,10 @@ class Livro {
               : grupoLiteratura == null
                   ? this.grupos
                   : comParticipacao(this.grupos, grupoLiteratura)),
+      // Sem esta linha, QUALQUER edicao feita no aparelho apagaria o pais em
+      // silencio — o `copyWith` reconstroi o livro inteiro, e o que nao for
+      // copiado volta ao valor padrao.
+      pais: pais ?? this.pais,
     );
   }
 }
