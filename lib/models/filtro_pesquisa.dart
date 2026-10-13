@@ -1,4 +1,5 @@
 import 'livro.dart';
+import 'paises.dart';
 
 enum FiltroStatus {
   todos('Todos'),
@@ -41,18 +42,27 @@ class FiltroPesquisa {
   FiltroGrupo grupo;
   bool comFoto;
 
+  /// Codigo ISO do pais, vazio quando nao ha filtro de pais.
+  ///
+  /// Quem liga este filtro e a tela de Paises — no celular nao ha mapa, por
+  /// decisao do usuario: "no iPhone e no Android faca por tabela e nao por
+  /// mapa". Mapa clicavel com 38 paises num polegar nao funciona.
+  String pais;
+
   FiltroPesquisa({
     this.texto = '',
     this.status = FiltroStatus.todos,
     this.grupo = FiltroGrupo.todos,
     this.comFoto = false,
+    this.pais = '',
   });
 
   bool get ativo =>
       texto.trim().isNotEmpty ||
       status != FiltroStatus.todos ||
       grupo != FiltroGrupo.todos ||
-      comFoto;
+      comFoto ||
+      pais.isNotEmpty;
 
   /// Quantos filtros estao ligados — vira o numerinho ao lado do botao.
   int get quantosLigados {
@@ -60,6 +70,7 @@ class FiltroPesquisa {
     if (status != FiltroStatus.todos) n++;
     if (grupo != FiltroGrupo.todos) n++;
     if (comFoto) n++;
+    if (pais.isNotEmpty) n++;
     return n;
   }
 
@@ -68,10 +79,11 @@ class FiltroPesquisa {
     status = FiltroStatus.todos;
     grupo = FiltroGrupo.todos;
     comFoto = false;
+    pais = '';
   }
 
   FiltroPesquisa copia() => FiltroPesquisa(
-      texto: texto, status: status, grupo: grupo, comFoto: comFoto);
+      texto: texto, status: status, grupo: grupo, comFoto: comFoto, pais: pais);
 
   /// A descricao dos filtros ligados, para a linha de resumo.
   String resumo(String Function(int) nomeDoGrupo) {
@@ -83,6 +95,7 @@ class FiltroPesquisa {
       partes.add(nomeDoGrupo(grupo.id!));
     }
     if (comFoto) partes.add('Com foto');
+    if (pais.isNotEmpty) partes.add(Paises.nome(pais));
     return partes.join(' · ');
   }
 
@@ -97,6 +110,7 @@ class FiltroPesquisa {
     }
     if (grupo.qualquer && !l.grupoLiteratura) return false;
     if (grupo.id != null && !l.listaGrupos.contains(grupo.id)) return false;
+    if (pais.isNotEmpty && l.pais.trim().toUpperCase() != pais) return false;
     return true;
   }
 }

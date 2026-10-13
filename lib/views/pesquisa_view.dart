@@ -10,7 +10,10 @@ import 'detalhe_view.dart';
 import 'filtros_sheet.dart';
 
 class PesquisaView extends StatefulWidget {
-  const PesquisaView({super.key});
+  /// Código ISO com que a tela já nasce filtrada. Quem passa é a tela de Países.
+  final String? paisInicial;
+
+  const PesquisaView({super.key, this.paisInicial});
 
   @override
   State<PesquisaView> createState() => _PesquisaViewState();
@@ -20,6 +23,16 @@ class _PesquisaViewState extends State<PesquisaView> {
   final _buscaCtrl = TextEditingController();
   final _filtro = FiltroPesquisa();
   Set<String> _fotosExistentes = {};
+
+  @override
+  void initState() {
+    super.initState();
+    // A tela de Países abre a Pesquisa já filtrada. O filtro entra aqui, no
+    // MESMO campo que a folha de filtros usa — um segundo caminho divergiria do
+    // primeiro na primeira mudança.
+    final p = widget.paisInicial;
+    if (p != null && p.isNotEmpty) _filtro.pais = p.toUpperCase();
+  }
 
   @override
   void didChangeDependencies() {

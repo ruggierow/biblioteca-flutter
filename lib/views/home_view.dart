@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/biblioteca_store.dart';
 import '../theme.dart';
 import 'cadastro_view.dart';
+import 'paises_view.dart';
 import 'pesquisa_view.dart';
 import 'sincronizacao_view.dart';
 import 'scanner_view.dart';
@@ -73,6 +74,15 @@ class HomeView extends StatelessWidget {
                       ),
                     ),
                     const Divider(height: 1),
+                    _MenuRow(
+                      icon: Icons.public,
+                      titulo: 'Países',
+                      habilitado: store.arquivoNome != null,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const PaisesView()),
+                      ),
+                    ),
                     _MenuRow(
                       icon: Icons.search,
                       titulo: 'Pesquisa',
