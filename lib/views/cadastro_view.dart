@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/biblioteca_store.dart';
 import '../models/grupos_store.dart';
 import '../models/livro.dart';
+import '../models/paises.dart';
 import '../services/foto_service.dart';
 import '../services/isbn_service.dart';
 import '../services/permissoes.dart';
@@ -55,6 +56,7 @@ class _CadastroViewState extends State<CadastroView> {
   bool _buscandoISBN = false;
   String _isbnStatus = '';
   bool _isbnSucesso = false;
+  String _pais = '';
   bool _mostrarCampoISBN = false;
   final _isbnFocus = FocusNode();
 
@@ -104,6 +106,7 @@ class _CadastroViewState extends State<CadastroView> {
     _tituloCtrl.text = l.titulo;
     _anoCtrl.text = l.ano;
     _localCtrl.text = l.local;
+    _pais = l.pais;
     _comentariosCtrl.text = l.comentarios;
     _emprestado = l.emprestado;
     _gruposSelecionados = l.listaGrupos.toSet();
@@ -248,6 +251,8 @@ class _CadastroViewState extends State<CadastroView> {
                   onSelecionar: (s) =>
                       setState(() => _localCtrl.text = s),
                 ),
+                const SizedBox(height: 8),
+                _buildSeletorDePais(),
               ],
             ),
           ),
@@ -522,6 +527,35 @@ class _CadastroViewState extends State<CadastroView> {
     );
   }
 
+  /// O seletor de pais do formulario.
+  ///
+  /// A lista sai de `Paises.ordenados`, a mesma tabela que da nome ao pais na
+  /// tela e na listagem por pais. Duas listas separadas deixariam escolher um
+  /// pais que o resto do app nao sabe nomear.
+  Widget _buildSeletorDePais() {
+    final itens = <DropdownMenuItem<String>>[
+      // Livro sem pais e o estado normal, e o vazio precisa seguir alcancavel:
+      // sem ele nao haveria como DESFAZER um pais posto por engano.
+      const DropdownMenuItem(value: '', child: Text('— sem país —')),
+      for (final p in Paises.ordenados)
+        DropdownMenuItem(value: p.key, child: Text(p.value)),
+    ];
+    // Um codigo gravado fora da tabela precisa ter item proprio: sem ele o
+    // Dropdown abre vazio e salvar apagaria o pais do livro em silencio.
+    final atual = _pais.trim().toUpperCase();
+    if (atual.isNotEmpty && !Paises.conhecido(atual)) {
+      itens.add(DropdownMenuItem(
+          value: atual, child: Text('$atual (fora da tabela)')));
+    }
+    return DropdownButtonFormField<String>(
+      initialValue: atual,
+      isExpanded: true,
+      decoration: const InputDecoration(labelText: 'País'),
+      items: itens,
+      onChanged: (v) => setState(() => _pais = v ?? ''),
+    );
+  }
+
   List<String> _sugestoes(List<String> valores, String termo) {
     final t = termo.trim();
     if (t.length < 2) return [];
@@ -572,6 +606,7 @@ class _CadastroViewState extends State<CadastroView> {
               ano: _anoCtrl.text.trim(),
               comentarios: _comentariosCtrl.text,
               local: _localCtrl.text.trim(),
+              pais: _pais.trim().toUpperCase(),
               emprestado: _emprestado,
               listaGrupos: _gruposSelecionados.toList()..sort(),
             );

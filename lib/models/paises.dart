@@ -35,4 +35,27 @@ class Paises {
   }
 
   static bool conhecido(String iso) => _nomes.containsKey(iso.trim().toUpperCase());
+
+  /// Os países em ordem alfabética pelo NOME mostrado.
+  ///
+  /// É a lista do seletor do formulário, e sai da MESMA tabela que dá nome ao
+  /// país na tela: só se pode escolher um país que o app sabe nomear.
+  ///
+  /// A ordem IGNORA acento, e isso não é detalhe: `compareTo` compara código
+  /// de caractere, e por ele "África do Sul", "Áustria" e "Índia" iriam para
+  /// DEPOIS de Vietnã, no fim da lista, longe de onde alguém as procura.
+  static final List<MapEntry<String, String>> ordenados = _nomes.entries.toList()
+    ..sort((a, b) => _chaveDeOrdem(a.value).compareTo(_chaveDeOrdem(b.value)));
+
+  static const _comAcento = 'áàâãäéèêëíìîïóòôõöúùûüçñ';
+  static const _semAcento = 'aaaaaeeeeiiiiooooouuuucn';
+
+  static String _chaveDeOrdem(String nome) {
+    final b = StringBuffer();
+    for (final c in nome.toLowerCase().split('')) {
+      final i = _comAcento.indexOf(c);
+      b.write(i < 0 ? c : _semAcento[i]);
+    }
+    return b.toString();
+  }
 }
