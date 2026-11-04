@@ -5,6 +5,7 @@ import '../services/documento_saf.dart';
 import '../services/grupos_json.dart';
 import '../services/vinculo_pasta.dart';
 import 'livro.dart';
+import 'idioma.dart';
 
 class BibliotecaStore extends ChangeNotifier {
   List<Livro> livros = [];
@@ -77,7 +78,7 @@ class BibliotecaStore extends ChangeNotifier {
 
       return await _abrirNaPasta();
     } catch (e) {
-      erroMensagem = 'Erro ao vincular: $e';
+      erroMensagem = t('erroAoVincular', [e]);
       notifyListeners();
       return false;
     }
@@ -89,9 +90,8 @@ class BibliotecaStore extends ChangeNotifier {
     if (uri == null) {
       arquivoUri = null;
       arquivoNome = null;
-      erroMensagem = 'Não há um $arquivoPadrao na pasta '
-          '"${VinculoPasta.nome ?? 'escolhida'}". '
-          'Escolha a pasta onde o arquivo está.';
+      erroMensagem = t('semArquivoNaPasta',
+          [arquivoPadrao, VinculoPasta.nome ?? t('pastaEscolhida')]);
       notifyListeners();
       return false;
     }
@@ -108,8 +108,7 @@ class BibliotecaStore extends ChangeNotifier {
     } catch (e) {
       // Garante que qualquer falha de plataforma (ex.: Google Drive offline,
       // permissão revogada de forma inesperada) não impeça o app de abrir.
-      erroMensagem = 'Não foi possível carregar o arquivo vinculado. '
-          'Toque em Selecionar arquivo para vinculá-lo de novo.';
+      erroMensagem = t('naoFoiPossivelCarregar');
       notifyListeners();
     }
   }
@@ -131,9 +130,7 @@ class BibliotecaStore extends ChangeNotifier {
       await prefs.remove(_prefLegado);
       await prefs.remove(_prefUri);
       await prefs.remove(_prefNome);
-      erroMensagem = 'Agora a Biblioteca vincula a PASTA inteira, e não cada '
-          'arquivo. Toque em Selecionar pasta e escolha a pasta onde está o '
-          'biblioteca.txt — o biblioteca.dat vem junto.';
+      erroMensagem = t('agoraVinculaPasta');
       notifyListeners();
     }
   }
@@ -146,7 +143,7 @@ class BibliotecaStore extends ChangeNotifier {
       ultimaRecarga = DateTime.now();
       erroMensagem = null;
     } catch (e) {
-      erroMensagem = 'Erro ao carregar: $e';
+      erroMensagem = t('erroAoCarregar', [e]);
     }
     notifyListeners();
   }
@@ -163,7 +160,7 @@ class BibliotecaStore extends ChangeNotifier {
       ultimaGravacao = DateTime.now();
       erroMensagem = null;
     } catch (e) {
-      erroMensagem = 'Erro ao salvar: $e';
+      erroMensagem = t('erroAoSalvar', [e]);
     }
     notifyListeners();
   }

@@ -13,6 +13,7 @@ import 'permissao_negada_view.dart';
 import '../theme.dart';
 import 'capa_camera_view.dart';
 import 'scanner_view.dart';
+import '../models/idioma.dart';
 
 /// Guarda o ISBN no campo de comentarios, no padrao "Rotulo: valor" que ali ja
 /// se usa para Editora, Ler e Kindle. Nao vira coluna nova porque o leitor do
@@ -124,12 +125,12 @@ class _CadastroViewState extends State<CadastroView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_editando ? 'Editar livro' : 'Novo livro'),
+        title: Text(_editando ? t('editarLivro') : t('novoLivro')),
         actions: [
           TextButton(
             onPressed: _tituloCtrl.text.trim().isEmpty ? null : () => _salvar(store),
-            child: const Text('Salvar',
-                style: TextStyle(
+            child: Text(t('salvar'),
+                style: const TextStyle(
                     color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
@@ -145,7 +146,7 @@ class _CadastroViewState extends State<CadastroView> {
         children: [
           // ISBN
           _Secao(
-            titulo: 'Buscar por ISBN',
+            titulo: t('buscarPorIsbn'),
             child: Column(
               children: [
                 Row(
@@ -160,7 +161,7 @@ class _CadastroViewState extends State<CadastroView> {
                           }
                         },
                         icon: const Icon(Icons.keyboard_alt_outlined),
-                        label: const Text('Digitar ISBN'),
+                        label: Text(t('digitarIsbn')),
                         style: TextButton.styleFrom(
                           alignment: Alignment.centerLeft,
                         ),
@@ -182,8 +183,8 @@ class _CadastroViewState extends State<CadastroView> {
                           focusNode: _isbnFocus,
                           keyboardType: TextInputType.number,
                           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                          decoration: const InputDecoration(
-                            labelText: 'ISBN (10 ou 13 dígitos)',
+                          decoration: InputDecoration(
+                            labelText: t('isbnDica'),
                           ),
                           onChanged: (_) => setState(() {}),
                         ),
@@ -219,17 +220,17 @@ class _CadastroViewState extends State<CadastroView> {
 
           // Foto da capa
           _Secao(
-            titulo: 'Foto da capa',
+            titulo: t('fotoDaCapa'),
             child: _buildFotoSection(),
           ),
           const SizedBox(height: 12),
 
           // Dados do livro
           _Secao(
-            titulo: 'Dados do livro',
+            titulo: t('dadosDoLivro'),
             child: Column(
               children: [
-                _buildTextField(_tituloCtrl, 'Título'),
+                _buildTextField(_tituloCtrl, t('titulo')),
                 const SizedBox(height: 8),
                 _SugestoesCadastro(
                   sugestoes: _sugestoes(
@@ -239,10 +240,10 @@ class _CadastroViewState extends State<CadastroView> {
                       setState(() => _tituloCtrl.text = s),
                 ),
                 const SizedBox(height: 8),
-                _buildTextField(_anoCtrl, 'Ano de publicação',
+                _buildTextField(_anoCtrl, t('anoDePublicacao'),
                     tipo: TextInputType.number),
                 const SizedBox(height: 8),
-                _buildTextField(_localCtrl, 'Local do exemplar'),
+                _buildTextField(_localCtrl, t('localDoExemplar')),
                 const SizedBox(height: 8),
                 _SugestoesCadastro(
                   sugestoes: _sugestoes(
@@ -268,7 +269,7 @@ class _CadastroViewState extends State<CadastroView> {
                     children: [
                       Expanded(
                           child: _buildTextField(
-                              _autoresCtrl[i], 'Nome do autor')),
+                              _autoresCtrl[i], t('nomeDoAutor'))),
                       if (_autoresCtrl.length > 1)
                         IconButton(
                           icon: const Icon(Icons.remove_circle,
@@ -291,7 +292,7 @@ class _CadastroViewState extends State<CadastroView> {
                   onPressed: () => setState(
                       () => _autoresCtrl.add(TextEditingController())),
                   icon: const Icon(Icons.add),
-                  label: const Text('Adicionar autor'),
+                  label: Text(t('adicionarAutor')),
                 ),
               ],
             ),
@@ -307,7 +308,7 @@ class _CadastroViewState extends State<CadastroView> {
                   Row(
                     children: [
                       Expanded(
-                          child: _buildTextField(_temasCtrl[i], 'Tema')),
+                          child: _buildTextField(_temasCtrl[i], t('tema'))),
                       if (_temasCtrl.length > 1)
                         IconButton(
                           icon: const Icon(Icons.remove_circle,
@@ -330,7 +331,7 @@ class _CadastroViewState extends State<CadastroView> {
                   onPressed: () =>
                       setState(() => _temasCtrl.add(TextEditingController())),
                   icon: const Icon(Icons.add),
-                  label: const Text('Adicionar tema'),
+                  label: Text(t('adicionarTema')),
                 ),
               ],
             ),
@@ -340,7 +341,7 @@ class _CadastroViewState extends State<CadastroView> {
           // Um livro pode estar em mais de um grupo — e assim que o Mac e o
           // Windows guardam, na coluna 8 ("1;3").
           _Secao(
-            titulo: 'Grupos de literatura',
+            titulo: t('gruposDeLiteratura'),
             child: Column(
               children: GruposStore.shared
                   .oferecidos(context.read<BibliotecaStore>().livros)
@@ -363,11 +364,11 @@ class _CadastroViewState extends State<CadastroView> {
 
           // Extras
           _Secao(
-            titulo: 'Extras',
+            titulo: t('extras'),
             child: Column(
               children: [
                 SwitchListTile(
-                  title: const Text('Emprestado'),
+                  title: Text(t('emprestado')),
                   value: _emprestado,
                   onChanged: (v) => setState(() => _emprestado = v),
                   activeColor: bibPrimary,
@@ -377,7 +378,7 @@ class _CadastroViewState extends State<CadastroView> {
                 TextField(
                   controller: _comentariosCtrl,
                   maxLines: 4,
-                  decoration: const InputDecoration(labelText: 'Comentários'),
+                  decoration: InputDecoration(labelText: t('comentarios')),
                 ),
               ],
             ),
@@ -406,15 +407,15 @@ class _CadastroViewState extends State<CadastroView> {
             children: [
               TextButton.icon(
                 icon: const Icon(Icons.camera_alt, color: bibPrimary),
-                label: const Text('Trocar',
-                    style: TextStyle(color: bibPrimary)),
+                label: Text(t('trocar'),
+                    style: const TextStyle(color: bibPrimary)),
                 onPressed: _capturarFoto,
               ),
               const SizedBox(width: 16),
               TextButton.icon(
                 icon: const Icon(Icons.delete_outline, color: bibDanger),
-                label: const Text('Remover',
-                    style: TextStyle(color: bibDanger)),
+                label: Text(t('remover'),
+                    style: const TextStyle(color: bibDanger)),
                 onPressed: () => setState(() {
                   _fotaNova = null;
                   _fotoExistente = null;
@@ -430,7 +431,7 @@ class _CadastroViewState extends State<CadastroView> {
       width: double.infinity,
       child: OutlinedButton.icon(
         icon: const Icon(Icons.camera_alt),
-        label: const Text('Fotografar capa'),
+        label: Text(t('fotografarCapa')),
         onPressed: _capturarFoto,
         style: OutlinedButton.styleFrom(
           foregroundColor: bibPrimary,
@@ -450,12 +451,12 @@ class _CadastroViewState extends State<CadastroView> {
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt, color: bibPrimary),
-              title: const Text('Câmera'),
+              title: Text(t('camera')),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: bibPrimary),
-              title: const Text('Galeria'),
+              title: Text(t('galeria')),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
           ],
@@ -536,7 +537,7 @@ class _CadastroViewState extends State<CadastroView> {
     final itens = <DropdownMenuItem<String>>[
       // Livro sem pais e o estado normal, e o vazio precisa seguir alcancavel:
       // sem ele nao haveria como DESFAZER um pais posto por engano.
-      const DropdownMenuItem(value: '', child: Text('— sem país —')),
+      DropdownMenuItem(value: '', child: Text(t('semPais'))),
       for (final p in Paises.ordenados)
         DropdownMenuItem(value: p.key, child: Text(p.value)),
     ];
@@ -545,12 +546,12 @@ class _CadastroViewState extends State<CadastroView> {
     final atual = _pais.trim().toUpperCase();
     if (atual.isNotEmpty && !Paises.conhecido(atual)) {
       itens.add(DropdownMenuItem(
-          value: atual, child: Text('$atual (fora da tabela)')));
+          value: atual, child: Text(t('foraDaTabela', [atual]))));
     }
     return DropdownButtonFormField<String>(
       initialValue: atual,
       isExpanded: true,
-      decoration: const InputDecoration(labelText: 'País'),
+      decoration: InputDecoration(labelText: t('pais')),
       items: itens,
       onChanged: (v) => setState(() => _pais = v ?? ''),
     );
@@ -654,24 +655,24 @@ class _CadastroViewState extends State<CadastroView> {
             _comentariosCtrl.text = r.comentarios;
           }
           _comentariosCtrl.text = comISBN(_comentariosCtrl.text, _isbnCtrl.text);
-          _isbnStatus = 'Preenchido com sucesso.';
+          _isbnStatus = t('preenchidoComSucesso');
           _isbnSucesso = true;
         });
       } else {
         setState(() {
           _comentariosCtrl.text = comISBN(_comentariosCtrl.text, _isbnCtrl.text);
-          _isbnStatus = 'ISBN não encontrado, mas o número foi guardado.';
+          _isbnStatus = t('isbnNaoEncontrado');
           _isbnSucesso = false;
         });
       }
     } on ISBNInvalidoException {
       setState(() {
-        _isbnStatus = 'ISBN inválido (deve ter 10 ou 13 dígitos).';
+        _isbnStatus = t('isbnInvalido');
         _isbnSucesso = false;
       });
     } catch (_) {
       setState(() {
-        _isbnStatus = 'Erro ao buscar. Verifique a internet.';
+        _isbnStatus = t('erroAoBuscar');
         _isbnSucesso = false;
       });
     }

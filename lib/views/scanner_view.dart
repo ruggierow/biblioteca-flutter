@@ -3,6 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/permissoes.dart';
 import '../theme.dart';
 import 'permissao_negada_view.dart';
+import '../models/idioma.dart';
 
 class ScannerView extends StatefulWidget {
   final ValueChanged<String> onScaneado;
@@ -82,7 +83,7 @@ class _ScannerViewState extends State<ScannerView>
                 );
               }
               return _ErroCamara(
-                mensagem: error.errorDetails?.message ?? 'Erro ao acessar câmera',
+                mensagem: error.errorDetails?.message ?? t('erroAoAcessarCamera'),
               );
             },
             onDetect: (capture) {
@@ -119,9 +120,9 @@ class _ScannerViewState extends State<ScannerView>
                   color: Colors.black54,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Text(
-                  'Aponte para o código de barras do livro',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+                child: Text(
+                  t('aponteParaCodigo'),
+                  style: const TextStyle(color: Colors.white, fontSize: 14),
                 ),
               ),
             ),
@@ -139,7 +140,7 @@ class _ScannerViewState extends State<ScannerView>
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8)),
               ),
-              child: const Text('Cancelar'),
+              child: Text(t('cancelar')),
             ),
           ),
         ],
@@ -163,9 +164,9 @@ class _ErroCamara extends StatelessWidget {
             const Icon(Icons.camera_alt_outlined,
                 color: Colors.white54, size: 72),
             const SizedBox(height: 20),
-            const Text(
-              'Câmera indisponível',
-              style: TextStyle(
+            Text(
+              t('cameraIndisponivel'),
+              style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold),
@@ -181,8 +182,8 @@ class _ErroCamara extends StatelessWidget {
             const SizedBox(height: 24),
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Voltar',
-                  style: TextStyle(color: Colors.white54)),
+              child: Text(t('voltar'),
+                  style: const TextStyle(color: Colors.white54)),
             ),
           ],
         ),

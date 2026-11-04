@@ -1,13 +1,17 @@
 import 'livro.dart';
 import 'paises.dart';
+import 'idioma.dart';
 
 enum FiltroStatus {
-  todos('Todos'),
-  disponiveis('Disponíveis'),
-  emprestados('Emprestados');
+  todos('statusTodos'),
+  disponiveis('statusDisponiveis'),
+  emprestados('statusEmprestados');
 
-  const FiltroStatus(this.rotulo);
-  final String rotulo;
+  const FiltroStatus(this._chave);
+  final String _chave;
+
+  /// Resolvido na hora, nao guardado: o enum nasce antes de o idioma ser lido.
+  String get rotulo => t(_chave);
 }
 
 /// O grupo escolhido no filtro: todos os livros, qualquer grupo, ou um
@@ -90,11 +94,11 @@ class FiltroPesquisa {
     final partes = <String>[];
     if (status != FiltroStatus.todos) partes.add(status.rotulo);
     if (grupo.qualquer) {
-      partes.add('Qualquer grupo');
+      partes.add(t('qualquerGrupo'));
     } else if (grupo.id != null) {
       partes.add(nomeDoGrupo(grupo.id!));
     }
-    if (comFoto) partes.add('Com foto');
+    if (comFoto) partes.add(t('comFoto'));
     if (pais.isNotEmpty) partes.add(Paises.nome(pais));
     return partes.join(' · ');
   }

@@ -6,6 +6,7 @@ import '../models/livro.dart';
 import '../services/foto_service.dart';
 import '../theme.dart';
 import 'cadastro_view.dart';
+import '../models/idioma.dart';
 
 class DetalheView extends StatefulWidget {
   final Livro livro;
@@ -43,8 +44,8 @@ class _DetalheViewState extends State<DetalheView> {
               MaterialPageRoute(
                   builder: (_) => CadastroView(livroEditando: livro)),
             ),
-            child: const Text('Editar',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(t('editar'),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -62,14 +63,14 @@ class _DetalheViewState extends State<DetalheView> {
           const SizedBox(height: 12),
 
           _Secao(
-            titulo: 'Identificação',
+            titulo: t('identificacao'),
             child: Column(
               children: [
-                _InfoRow(label: 'Título', valor: livro.titulo),
+                _InfoRow(label: t('titulo'), valor: livro.titulo),
                 if (livro.ano.isNotEmpty)
-                  _InfoRow(label: 'Ano', valor: livro.ano),
+                  _InfoRow(label: t('ano'), valor: livro.ano),
                 if (livro.local.isNotEmpty)
-                  _InfoRow(label: 'Local', valor: livro.local),
+                  _InfoRow(label: t('local'), valor: livro.local),
               ],
             ),
           ),
@@ -109,17 +110,17 @@ class _DetalheViewState extends State<DetalheView> {
 
           const SizedBox(height: 12),
           _Secao(
-            titulo: 'Status',
+            titulo: t('status'),
             child: Column(
               children: [
                 _InfoRow(
-                    label: 'Emprestado',
-                    valor: livro.emprestado ? 'Sim' : 'Não',
+                    label: t('emprestado'),
+                    valor: livro.emprestado ? t('sim') : t('nao'),
                     valorCor: livro.emprestado ? bibDanger : bibAccent),
                 _InfoRow(
-                    label: 'Grupo de literatura',
+                    label: t('grupoDeLiteratura'),
                     valor: livro.listaGrupos.isEmpty
-                        ? 'Não'
+                        ? t('nao')
                         : livro.listaGrupos
                             .map(GruposStore.shared.nome)
                             .join(', ')),
@@ -162,13 +163,13 @@ class _CapaSection extends StatelessWidget {
         color: const Color(0xFFF2F2F7),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: const Column(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.menu_book_rounded, size: 52, color: Color(0xFF2B5FB3)),
-          SizedBox(height: 8),
-          Text('Sem foto da capa',
-              style: TextStyle(fontSize: 12, color: Colors.black45)),
+          const Icon(Icons.menu_book_rounded, size: 52, color: Color(0xFF2B5FB3)),
+          const SizedBox(height: 8),
+          Text(t('semFotoDaCapa'),
+              style: const TextStyle(fontSize: 12, color: Colors.black45)),
         ],
       ),
     );
@@ -289,7 +290,7 @@ class ComentariosView extends StatelessWidget {
       await Clipboard.setData(ClipboardData(text: titulo));
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Título copiado: $titulo — cole na busca do Kindle.'),
+          content: Text(t('tituloCopiado', [titulo])),
           duration: const Duration(seconds: 5),
         ));
       }
@@ -322,7 +323,7 @@ class ComentariosView extends StatelessWidget {
         nome = sep.rotulo;
         antes = sep.prefixo;
       } else if (url.toLowerCase().startsWith('kindle:')) {
-        nome = 'app Kindle';
+        nome = t('appKindle');
       } else {
         nome = url
             .replaceFirst(RegExp(r'^[a-z]+://', caseSensitive: false), '')

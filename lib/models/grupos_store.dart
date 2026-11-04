@@ -1,11 +1,25 @@
 import 'livro.dart';
+import 'idioma.dart';
 
 /// Um grupo de literatura: o numero que aparece na coluna 8 do arquivo e o
 /// nome que o usuario deu a ele.
 class Grupo {
   final int id;
-  final String nome;
-  const Grupo(this.id, this.nome);
+  final String? _nome;
+  final String? _chave;
+
+  /// Grupo com nome proprio — o que vem do `grupos.json`.
+  const Grupo(this.id, String nome)
+      : _nome = nome,
+        _chave = null;
+
+  /// Grupo cujo nome e do app, e portanto traduzido: guarda a CHAVE, nao o
+  /// texto, para nao congelar o idioma na constante.
+  const Grupo.doDicionario(this.id, String chave)
+      : _nome = null,
+        _chave = chave;
+
+  String get nome => _nome ?? t(_chave!);
 }
 
 /// Os NOMES dos grupos nao cabem no `biblioteca.txt`, que guarda so os numeros
@@ -19,7 +33,7 @@ class GruposStore {
   GruposStore._();
   static final GruposStore shared = GruposStore._();
 
-  static const padrao = Grupo(1, 'Grupo de Literatura');
+  static const padrao = Grupo.doDicionario(1, 'grupoDeLiteraturaNome');
 
   List<Grupo> grupos = const [padrao];
 
@@ -28,7 +42,7 @@ class GruposStore {
     for (final g in grupos) {
       if (g.id == id) return g.nome;
     }
-    return 'Grupo $id';
+    return t('grupoNumero', [id]);
   }
 
   /// Os grupos que o seletor deve oferecer: os conhecidos, mais os que
@@ -41,7 +55,10 @@ class GruposStore {
         if (!ids.contains(id)) extras.add(id);
       }
     }
-    final todos = [...grupos, ...extras.map((id) => Grupo(id, 'Grupo $id'))];
+    final todos = [
+      ...grupos,
+      ...extras.map((id) => Grupo(id, t('grupoNumero', [id]))),
+    ];
     todos.sort((a, b) => a.id.compareTo(b.id));
     return todos;
   }

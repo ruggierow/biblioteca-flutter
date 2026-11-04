@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/filtro_pesquisa.dart';
 import '../models/grupos_store.dart';
 import '../theme.dart';
+import '../models/idioma.dart';
 
 /// A folha de filtros da pesquisa — o equivalente da barra "Pesquisar e
 /// filtrar" do Mac e do Windows, num formato que cabe no polegar.
@@ -43,8 +44,8 @@ class _FiltrosSheetState extends State<FiltrosSheet> {
             ),
             Row(
               children: [
-                const Text('Filtros',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                Text(t('filtros'),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
                 const Spacer(),
                 TextButton(
                   onPressed: _f.quantosLigados == 0
@@ -54,13 +55,13 @@ class _FiltrosSheetState extends State<FiltrosSheet> {
                             _f.limpar();
                             _f.texto = t;
                           }),
-                  child: const Text('Limpar'),
+                  child: Text(t('limpar')),
                 ),
               ],
             ),
             const SizedBox(height: 12),
 
-            _titulo('Status'),
+            _titulo(t('status')),
             SegmentedButton<FiltroStatus>(
               segments: FiltroStatus.values
                   .map((s) => ButtonSegment(value: s, label: Text(s.rotulo)))
@@ -71,16 +72,16 @@ class _FiltrosSheetState extends State<FiltrosSheet> {
             ),
             const SizedBox(height: 18),
 
-            _titulo('Grupo de literatura'),
+            _titulo(t('grupoDeLiteratura')),
             DropdownButtonFormField<FiltroGrupo>(
               initialValue: _f.grupo,
               isExpanded: true,
               decoration: const InputDecoration(isDense: true),
               items: [
-                const DropdownMenuItem(
-                    value: FiltroGrupo.todos, child: Text('Todos os livros')),
-                const DropdownMenuItem(
-                    value: FiltroGrupo.qualquerUm, child: Text('Qualquer grupo')),
+                DropdownMenuItem(
+                    value: FiltroGrupo.todos, child: Text(t('todosOsLivros'))),
+                DropdownMenuItem(
+                    value: FiltroGrupo.qualquerUm, child: Text(t('qualquerGrupo'))),
                 ...widget.grupos.map((g) => DropdownMenuItem(
                     value: FiltroGrupo.especifico(g.id), child: Text(g.nome))),
               ],
@@ -90,7 +91,7 @@ class _FiltrosSheetState extends State<FiltrosSheet> {
 
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Só livros com foto'),
+              title: Text(t('soLivrosComFoto')),
               value: _f.comFoto,
               onChanged: (v) => setState(() => _f.comFoto = v),
             ),
@@ -100,7 +101,7 @@ class _FiltrosSheetState extends State<FiltrosSheet> {
               width: double.infinity,
               child: FilledButton(
                 onPressed: () => Navigator.pop(context, _f),
-                child: const Text('Pronto'),
+                child: Text(t('pronto')),
               ),
             ),
           ],

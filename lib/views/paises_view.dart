@@ -5,6 +5,7 @@ import '../models/biblioteca_store.dart';
 import '../models/paises.dart';
 import '../theme.dart';
 import 'pesquisa_view.dart';
+import '../models/idioma.dart';
 
 /// A tabela do acervo por país.
 ///
@@ -36,7 +37,7 @@ class PaisesView extends StatelessWidget {
     final maior = ordenados.isEmpty ? 1 : ordenados.first.value;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Países')),
+      appBar: AppBar(title: Text(t('paises'))),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -44,24 +45,30 @@ class PaisesView extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Text(
               ordenados.isEmpty
-                  ? 'Nenhum livro tem país ainda.'
-                  : '$comPais ${comPais == 1 ? 'livro' : 'livros'} em '
-                      '${ordenados.length} ${ordenados.length == 1 ? 'país' : 'países'}'
-                      '${semPais > 0 ? ' · $semPais ainda sem país' : ''}',
+                  ? t('nenhumLivroComPais')
+                  : t('acervoEmPaises', [
+                        comPais,
+                        comPais == 1 ? t('umLivro') : t('variosLivros'),
+                        ordenados.length,
+                        ordenados.length == 1
+                            ? t('umPais')
+                            : t('variosPaises'),
+                      ]) +
+                      (semPais > 0 ? t('aindaSemPais', [semPais]) : ''),
               style: const TextStyle(color: bibMuted, fontSize: 14),
             ),
           ),
           const Divider(height: 1),
           Expanded(
             child: ordenados.isEmpty
-                ? const Center(
+                ? Center(
                     child: Padding(
-                      padding: EdgeInsets.all(28),
+                      padding: const EdgeInsets.all(28),
                       child: Text(
-                        'O país vem do tema do livro ou do ISBN. '
-                        'Leia o código de barras de um livro para começar.',
+                        t('paisVemDoTema') +
+                            t('leiaCodigoParaComecar'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: bibMuted, fontSize: 15),
+                        style: const TextStyle(color: bibMuted, fontSize: 15),
                       ),
                     ),
                   )

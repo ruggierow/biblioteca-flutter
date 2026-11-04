@@ -8,6 +8,7 @@ import '../services/foto_service.dart';
 import '../theme.dart';
 import 'detalhe_view.dart';
 import 'filtros_sheet.dart';
+import '../models/idioma.dart';
 
 class PesquisaView extends StatefulWidget {
   /// Código ISO com que a tela já nasce filtrada. Quem passa é a tela de Países.
@@ -63,15 +64,17 @@ class _PesquisaViewState extends State<PesquisaView> {
     final filtrados = _filtrar(store.livros);
     final resumo = _filtro.resumo(GruposStore.shared.nome);
     final contagem = !_filtro.ativo
-        ? '${filtrados.length} ${filtrados.length == 1 ? 'livro' : 'livros'}'
-        : '${filtrados.length} ${filtrados.length == 1 ? 'livro encontrado' : 'livros encontrados'}';
+        ? '${filtrados.length} '
+            '${filtrados.length == 1 ? t('umLivro') : t('variosLivros')}'
+        : '${filtrados.length} '
+            '${filtrados.length == 1 ? t('umLivroEncontrado') : t('variosLivrosEncontrados')}';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Pesquisa'),
+        title: Text(t('pesquisa')),
         actions: [
           IconButton(
-            tooltip: 'Filtros',
+            tooltip: t('filtros'),
             icon: Icon(
               _filtro.quantosLigados > 0
                   ? Icons.filter_alt
@@ -92,7 +95,7 @@ class _PesquisaViewState extends State<PesquisaView> {
               autofocus: false,
               onChanged: (v) => setState(() => _filtro.texto = v),
               decoration: InputDecoration(
-                hintText: 'Buscar por título, autor, tema, local ou ano…',
+                hintText: t('buscarPlaceholder'),
                 prefixIcon: const Icon(Icons.search, color: bibPrimary),
                 suffixIcon: _filtro.texto.isNotEmpty
                     ? IconButton(
@@ -122,7 +125,7 @@ class _PesquisaViewState extends State<PesquisaView> {
                       _filtro.limpar();
                       _filtro.texto = t;
                     }),
-                    child: const Text('Limpar'),
+                    child: Text(t('limpar')),
                   ),
                 ],
               ),
@@ -144,24 +147,24 @@ class _PesquisaViewState extends State<PesquisaView> {
             // Dito antes, afirma que a biblioteca esta vazia quando ela apenas
             // ainda nao chegou da nuvem — e o arquivo pode demorar.
             child: store.carregando && filtrados.isEmpty
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        SizedBox(
+                        const SizedBox(
                             width: 28,
                             height: 28,
                             child: CircularProgressIndicator(strokeWidth: 3)),
-                        SizedBox(height: 14),
-                        Text('Carregando a biblioteca…',
-                            style: TextStyle(color: bibMuted, fontSize: 16)),
+                        const SizedBox(height: 14),
+                        Text(t('carregandoBiblioteca'),
+                            style: const TextStyle(color: bibMuted, fontSize: 16)),
                       ],
                     ),
                   )
                 : filtrados.isEmpty
                 ? Center(
                     child: Text(
-                      _filtro.ativo ? 'Nenhum resultado' : 'Nenhum livro cadastrado',
+                      _filtro.ativo ? t('nenhumResultado') : t('nenhumLivroCadastrado'),
                       style: const TextStyle(color: bibMuted, fontSize: 16),
                     ),
                   )
@@ -184,16 +187,16 @@ class _PesquisaViewState extends State<PesquisaView> {
                           return await showDialog<bool>(
                             context: context,
                             builder: (ctx) => AlertDialog(
-                              title: const Text('Remover livro'),
-                              content: Text('Remover "${livro.titulo}" da biblioteca?'),
+                              title: Text(t('removerLivro')),
+                              content: Text(t('removerConfirma', [livro.titulo])),
                               actions: [
                                 TextButton(
                                     onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('Cancelar')),
+                                    child: Text(t('cancelar'))),
                                 TextButton(
                                     onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('Remover',
-                                        style: TextStyle(color: bibDanger))),
+                                    child: Text(t('remover'),
+                                        style: const TextStyle(color: bibDanger))),
                               ],
                             ),
                           );

@@ -9,6 +9,7 @@ import 'paises_view.dart';
 import 'pesquisa_view.dart';
 import 'sincronizacao_view.dart';
 import 'scanner_view.dart';
+import '../models/idioma.dart';
 
 class HomeView extends StatelessWidget {
   const HomeView({super.key});
@@ -43,10 +44,10 @@ class HomeView extends StatelessWidget {
                         ? null
                         : () => _abrirScanner(context),
                     icon: const Icon(Icons.barcode_reader),
-                    label: const Text(
-                      'Escanear livro',
+                    label: Text(
+                      t('escanearLivro'),
                       style:
-                          TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                          const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                     ),
                     style: ElevatedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -65,7 +66,7 @@ class HomeView extends StatelessWidget {
                   children: [
                     _MenuRow(
                       icon: Icons.add_circle_outline,
-                      titulo: 'Cadastro',
+                      titulo: t('menuCadastro'),
                       habilitado: store.arquivoNome != null,
                       onTap: () => Navigator.push(
                         context,
@@ -76,7 +77,7 @@ class HomeView extends StatelessWidget {
                     const Divider(height: 1),
                     _MenuRow(
                       icon: Icons.public,
-                      titulo: 'Países',
+                      titulo: t('menuPaises'),
                       habilitado: store.arquivoNome != null,
                       onTap: () => Navigator.push(
                         context,
@@ -85,7 +86,7 @@ class HomeView extends StatelessWidget {
                     ),
                     _MenuRow(
                       icon: Icons.search,
-                      titulo: 'Pesquisa',
+                      titulo: t('menuPesquisa'),
                       habilitado: store.arquivoNome != null,
                       onTap: () => Navigator.push(
                         context,
@@ -96,7 +97,7 @@ class HomeView extends StatelessWidget {
                     const Divider(height: 1),
                     _MenuRow(
                       icon: Icons.sync,
-                      titulo: 'Sincronização',
+                      titulo: t('menuSincronizacao'),
                       habilitado: true,
                       onTap: () => Navigator.push(
                         context,
@@ -111,28 +112,28 @@ class HomeView extends StatelessWidget {
 
               // Info do arquivo
               _Card(
-                titulo: 'Arquivo',
+                titulo: t('arquivo'),
                 child: store.arquivoNome == null
-                    ? const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: Text('Nenhum arquivo vinculado',
-                            style: TextStyle(color: bibMuted)),
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Text(t('nenhumArquivoVinculado'),
+                            style: const TextStyle(color: bibMuted)),
                       )
                     : Column(
                         children: [
                           _InfoRow(
-                              label: 'Selecionado',
+                              label: t('selecionado'),
                               valor: store.arquivoNome!),
                           _InfoRow(
-                              label: 'Livros',
+                              label: t('livros'),
                               valor: '${store.livros.length}'),
                           if (store.ultimaRecarga != null)
                             _InfoRow(
-                                label: 'Recarregado',
+                                label: t('recarregado'),
                                 valor: _formatarHora(store.ultimaRecarga!)),
                           if (store.ultimaGravacao != null)
                             _InfoRow(
-                                label: 'Salvo',
+                                label: t('salvo'),
                                 valor: _formatarHora(store.ultimaGravacao!)),
                         ],
                       ),
@@ -205,19 +206,21 @@ class _HomeHeader extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                   color: Colors.white)),
           const SizedBox(height: 4),
-          const Text('Cadastro, pesquisa e sincronização da sua base de livros.',
-              style: TextStyle(fontSize: 14, color: Colors.white70)),
+          Text(t('subtituloApp'),
+              style: const TextStyle(fontSize: 14, color: Colors.white70)),
           const SizedBox(height: 10),
           Row(
             children: [
               const Icon(Icons.menu_book, color: Colors.white, size: 18),
               const SizedBox(width: 6),
-              Text('$livrosCount livros carregados',
+              Text(t('livrosCarregados', [livrosCount]),
                   style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: Colors.white)),
               const Spacer(),
+              const _SeletorDeIdioma(),
+              const SizedBox(width: 10),
               // Versao e build, lidos do pacote instalado. Discretos: servem
               // para saber o que esta rodando quando algo da errado.
               FutureBuilder<String>(
@@ -228,6 +231,42 @@ class _HomeHeader extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A escolha do idioma, no cabecalho — mesmo lugar que ela ocupa no motor-web.
+///
+/// Fica ao lado da versao, discreta: o idioma se escolhe uma vez e nao se
+/// mexe mais. O rotulo mostra a lingua em vigor, nao a outra.
+class _SeletorDeIdioma extends StatelessWidget {
+  const _SeletorDeIdioma();
+
+  @override
+  Widget build(BuildContext context) {
+    final idioma = context.watch<Idioma>();
+    return PopupMenuButton<String>(
+      tooltip: t('idiomaDica'),
+      initialValue: idioma.atual,
+      onSelected: idioma.trocar,
+      padding: EdgeInsets.zero,
+      itemBuilder: (_) => const [
+        PopupMenuItem(value: 'pt', child: Text('Português')),
+        PopupMenuItem(value: 'en', child: Text('English')),
+      ],
+      child: Row(
+        children: [
+          const Icon(Icons.language, color: Colors.white70, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            idioma.atual.toUpperCase(),
+            style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Colors.white70),
           ),
         ],
       ),

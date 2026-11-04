@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
 import '../services/permissoes.dart';
 import '../theme.dart';
+import '../models/idioma.dart';
 
 /// Para que serve a câmera na tela que pediu a permissão.
 /// Muda o texto explicativo e se existe alternativa sem câmera.
 enum UsoDaCamera {
-  scanner(
-    'Para escanear o código de barras, permita o acesso à câmera nas '
-        'configurações do dispositivo.',
-  ),
-  capa(
-    'Para fotografar a capa, permita o acesso à câmera nas configurações '
-        'do dispositivo.',
-  );
+  scanner('permissaoScanner'),
+  capa('permissaoFoto');
 
-  const UsoDaCamera(this.explicacao);
-  final String explicacao;
+  const UsoDaCamera(this._chave);
+  final String _chave;
+
+  /// Resolvido na hora, nao guardado: o idioma pode mudar depois de o enum
+  /// existir, e um texto gravado na constante ficaria na lingua antiga.
+  String get explicacao => t(_chave);
 }
 
 /// Tela exibida quando a câmera está negada ou restrita.
@@ -38,7 +37,7 @@ class PermissaoNegadaView extends StatelessWidget {
   });
 
   String get _explicacao => estado == EstadoPermissao.restrita
-      ? 'O acesso à câmera está bloqueado neste dispositivo.'
+      ? t('cameraBloqueada')
       : uso.explicacao;
 
   @override
@@ -52,9 +51,9 @@ class PermissaoNegadaView extends StatelessWidget {
             const Icon(Icons.no_photography_outlined,
                 color: Colors.white54, size: 72),
             const SizedBox(height: 20),
-            const Text(
-              'Acesso à câmera negado',
-              style: TextStyle(
+            Text(
+              t('acessoCameraNegado'),
+              style: const TextStyle(
                   color: Colors.white,
                   fontSize: 20,
                   fontWeight: FontWeight.bold),
@@ -73,7 +72,7 @@ class PermissaoNegadaView extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: Permissoes.abrirConfiguracoes,
                 icon: const Icon(Icons.settings_outlined),
-                label: const Text('Abrir Configurações'),
+                label: Text(t('abrirConfiguracoes')),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: bibPrimary,
                   foregroundColor: Colors.white,
@@ -86,8 +85,8 @@ class PermissaoNegadaView extends StatelessWidget {
               const SizedBox(height: 12),
               TextButton(
                 onPressed: onDigitarISBN,
-                child: const Text('Digitar ISBN',
-                    style: TextStyle(
+                child: Text(t('digitarIsbn'),
+                    style: const TextStyle(
                         color: Colors.white, fontWeight: FontWeight.bold)),
               ),
             ],
@@ -95,8 +94,8 @@ class PermissaoNegadaView extends StatelessWidget {
             const SizedBox(height: 12),
             TextButton(
               onPressed: onCancelar,
-              child: const Text('Cancelar',
-                  style: TextStyle(color: Colors.white54)),
+              child: Text(t('cancelar'),
+                  style: const TextStyle(color: Colors.white54)),
             ),
           ],
         ),

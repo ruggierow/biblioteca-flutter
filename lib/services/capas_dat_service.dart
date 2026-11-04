@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'documento_saf.dart';
 import 'foto_service.dart';
 import 'vinculo_pasta.dart';
+import '../models/idioma.dart';
 
 /// Traz as capas para o Android a partir do `biblioteca.dat`.
 ///
@@ -93,5 +94,5 @@ class FormatoInesperado implements Exception {
   const FormatoInesperado();
   @override
   String toString() =>
-      'O arquivo escolhido não parece ser o biblioteca.dat.';
+      t('naoParecebibliotecaDat');
 }

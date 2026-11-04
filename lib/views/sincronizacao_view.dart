@@ -4,6 +4,7 @@ import '../models/biblioteca_store.dart';
 import '../services/capas_dat_service.dart';
 import '../services/vinculo_pasta.dart';
 import '../theme.dart';
+import '../models/idioma.dart';
 
 class SincronizacaoView extends StatefulWidget {
   const SincronizacaoView({super.key});
@@ -42,12 +43,17 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
       if (mounted) {
         setState(() {
           _resultadoSync = copiados == 0
-              ? 'Nenhuma foto nova encontrada.'
-              : '$copiados ${copiados == 1 ? 'foto copiada' : 'fotos copiadas'} com sucesso.';
+              ? t('nenhumaFotoNova')
+              : t('fotosCopiadas', [
+                  copiados,
+                  copiados == 1
+                      ? t('umaFotoCopiada')
+                      : t('variasFotosCopiadas'),
+                ]);
         });
       }
     } catch (e) {
-      if (mounted) setState(() => _resultadoSync = 'Erro: $e');
+      if (mounted) setState(() => _resultadoSync = t('erroGenerico', [e]));
     } finally {
       if (mounted) setState(() => _sincronizando = false);
     }
@@ -58,7 +64,7 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
     final store = context.watch<BibliotecaStore>();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Sincronização')),
+      appBar: AppBar(title: Text(t('sincronizacao'))),
         // Android 15 impoe o modo borda a borda para quem mira o SDK 35+: o
         // app desenha POR BAIXO da barra de navegacao e cabe a ele reservar o
         // espaco. Sem isto, a ultima secao fica debaixo da barra e a lista nem
@@ -70,21 +76,21 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
         children: [
           // Status do arquivo
           _Secao(
-            titulo: 'Arquivo',
+            titulo: t('arquivo'),
             child: store.arquivoNome == null
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 4),
-                    child: Text('Nenhum arquivo vinculado',
-                        style: TextStyle(color: bibMuted)),
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text(t('nenhumArquivoVinculado'),
+                        style: const TextStyle(color: bibMuted)),
                   )
                 : Column(
                     children: [
-                      _InfoRow(label: 'Selecionado', valor: store.arquivoNome!),
-                      _InfoRow(label: 'Livros carregados', valor: '${store.livros.length}'),
+                      _InfoRow(label: t('selecionado'), valor: store.arquivoNome!),
+                      _InfoRow(label: t('livrosCarregadosRotulo'), valor: '${store.livros.length}'),
                       if (store.ultimaRecarga != null)
-                        _InfoRow(label: 'Recarregado', valor: _hora(store.ultimaRecarga!)),
+                        _InfoRow(label: t('recarregado'), valor: _hora(store.ultimaRecarga!)),
                       if (store.ultimaGravacao != null)
-                        _InfoRow(label: 'Salvo', valor: _hora(store.ultimaGravacao!)),
+                        _InfoRow(label: t('salvo'), valor: _hora(store.ultimaGravacao!)),
                     ],
                   ),
           ),
@@ -92,14 +98,14 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
 
           // Ações de arquivo
           _Secao(
-            titulo: 'Ações',
+            titulo: t('acoes'),
             child: Column(
               children: [
                 ListTile(
                   leading: const Icon(Icons.folder_open, color: bibPrimary),
                   title: Text(VinculoPasta.vinculada
-                      ? 'Trocar pasta'
-                      : 'Selecionar pasta'),
+                      ? t('trocarPasta')
+                      : t('selecionarPasta')),
                   subtitle: VinculoPasta.nome == null
                       ? null
                       : Text(VinculoPasta.nome!,
@@ -110,7 +116,7 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.sync, color: bibPrimary),
-                  title: const Text('Recarregar arquivo'),
+                  title: Text(t('recarregarArquivo')),
                   onTap: store.arquivoNome == null ? null : () => store.recarregarArquivo(),
                   contentPadding: EdgeInsets.zero,
                   textColor: store.arquivoNome == null ? bibMuted : null,
@@ -123,22 +129,19 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
 
           // Fotos de capa
           _Secao(
-            titulo: 'Fotos de capa',
+            titulo: t('fotosDeCapa'),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (_capasNome == null) ...[
                   Text(
                     VinculoPasta.vinculada
-                        ? 'Não há um biblioteca.dat nesta pasta. É o arquivo em '
-                            'que o Mac e o iPhone guardam todas as capas; ele '
-                            'fica ao lado do biblioteca.txt.'
-                        : 'Vincule a pasta primeiro. As capas vêm do '
-                            'biblioteca.dat que está dentro dela.',
+                        ? t('semDatNaPasta')
+                        : t('vinculePastaPrimeiro'),
                     style: const TextStyle(color: bibMuted, fontSize: 13),
                   ),
                 ] else ...[
-                  _InfoRow(label: 'Arquivo', valor: _capasNome!),
+                  _InfoRow(label: t('arquivo'), valor: _capasNome!),
                   const SizedBox(height: 8),
                   if (_resultadoSync != null)
                     Padding(
@@ -156,7 +159,7 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
                                   width: 16, height: 16,
                                   child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                               : const Icon(Icons.download),
-                          label: Text(_sincronizando ? 'Sincronizando…' : 'Sincronizar agora'),
+                          label: Text(_sincronizando ? t('sincronizando') : t('sincronizarAgora')),
                         ),
                       ),
                     ],
@@ -169,28 +172,28 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
 
           // Instruções Google Drive
           _Secao(
-            titulo: 'Sincronizar via Google Drive',
+            titulo: t('sincronizarViaDrive'),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
+              children: [
                 _Instrucao(
                   numero: '1',
-                  texto: 'No computador, ponha o biblioteca.txt e o biblioteca.dat numa pasta do Google Drive e aguarde sincronizar.',
+                  texto: t('passoDrive1'),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 _Instrucao(
                   numero: '2',
-                  texto: 'No app Google Drive do Android, encontre essa pasta, toque em ⋮ e selecione "Tornar disponível offline".',
+                  texto: t('passoDrive2'),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 _Instrucao(
                   numero: '3',
-                  texto: 'Aqui em Sincronização, toque em "Selecionar pasta", navegue até Drive no menu lateral e escolha a pasta. O Android não deixa escolher "Meu Drive" direto: tem de ser uma pasta dentro dele.',
+                  texto: t('passoDrive3'),
                 ),
-                SizedBox(height: 10),
+                const SizedBox(height: 10),
                 _Instrucao(
                   numero: '↺',
-                  texto: 'Antes de editar, toque em "Recarregar" se alterou a base em outro dispositivo. Evite editar simultaneamente em dois lugares.',
+                  texto: t('passoDrive4'),
                 ),
               ],
             ),
