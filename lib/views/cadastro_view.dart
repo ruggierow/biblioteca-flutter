@@ -261,7 +261,7 @@ class _CadastroViewState extends State<CadastroView> {
 
           // Autores
           _Secao(
-            titulo: 'Autor(es)',
+            titulo: t('autores'),
             child: Column(
               children: [
                 for (int i = 0; i < _autoresCtrl.length; i++) ...[
@@ -301,7 +301,7 @@ class _CadastroViewState extends State<CadastroView> {
 
           // Temas
           _Secao(
-            titulo: 'Tema(s)',
+            titulo: t('temasRotulo'),
             child: Column(
               children: [
                 for (int i = 0; i < _temasCtrl.length; i++) ...[

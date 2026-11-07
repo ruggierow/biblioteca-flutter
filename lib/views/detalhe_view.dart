@@ -78,7 +78,7 @@ class _DetalheViewState extends State<DetalheView> {
           if (livro.autores.where((a) => a.isNotEmpty).isNotEmpty) ...[
             const SizedBox(height: 12),
             _Secao(
-              titulo: 'Autor(es)',
+              titulo: t('autores'),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: livro.autores
@@ -96,7 +96,7 @@ class _DetalheViewState extends State<DetalheView> {
           if (livro.temas.where((t) => t.isNotEmpty).isNotEmpty) ...[
             const SizedBox(height: 12),
             _Secao(
-              titulo: 'Tema(s)',
+              titulo: t('temasRotulo'),
               child: Wrap(
                 spacing: 6,
                 runSpacing: 6,
