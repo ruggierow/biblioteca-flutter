@@ -263,6 +263,9 @@ const TEXTOS = <String, Map<String, String>>{
     'pastaEscolhida': 'escolhida',
     'semArquivoNaPasta': 'Não há um \${0} na pasta "\${1}". '
         'Escolha a pasta onde o arquivo está.',
+    'criarArquivoAqui': 'Criar biblioteca.txt nesta pasta',
+    'criarArquivoAquiDica': 'A pasta ainda não tem um. O app cria o arquivo e passa a gravar nele.',
+    'erroAoCriarArquivo': 'Não foi possível criar o arquivo nesta pasta: \${0}',
     'naoFoiPossivelCarregar': 'Não foi possível carregar o arquivo vinculado. '
         'Toque em Selecionar arquivo para vinculá-lo de novo.',
     'agoraVinculaPasta': 'Agora a Biblioteca vincula a PASTA inteira, e não '
@@ -434,6 +437,9 @@ const TEXTOS = <String, Map<String, String>>{
     'pastaEscolhida': 'the one you chose',
     'semArquivoNaPasta': 'There is no \${0} in the "\${1}" folder. '
         'Choose the folder where the file is.',
+    'criarArquivoAqui': 'Create biblioteca.txt in this folder',
+    'criarArquivoAquiDica': 'This folder does not have one yet. The app creates it and writes there from now on.',
+    'erroAoCriarArquivo': 'The file could not be created in this folder: \${0}',
     'naoFoiPossivelCarregar': 'The linked file could not be loaded. '
         'Tap Select file to link it again.',
     'agoraVinculaPasta': 'Biblioteca now links the WHOLE folder, not each '

@@ -102,6 +102,41 @@ class BibliotecaStore extends ChangeNotifier {
     return true;
   }
 
+  /// Cria um `biblioteca.txt` na pasta vinculada e passa a usá-lo.
+  ///
+  /// Sem isto, vincular uma pasta que ainda não tem o arquivo era um beco sem
+  /// saída: [_abrirNaPasta] acusava a falta, zerava o [arquivoUri], e
+  /// [salvar] desiste quando ele é nulo — o usuário não tinha como criar o
+  /// arquivo pelo app. O Mac e o Windows já ofereciam isso na janela de
+  /// primeira abertura; o Android, não.
+  ///
+  /// Grava a lista ATUAL, não um arquivo de zero byte. Para quem está
+  /// começando ela está vazia, e sai um arquivo válido em vez de vazio; para
+  /// quem já tinha livros à vista, "criar aqui" leva a biblioteca para a
+  /// pasta nova, que é o que a frase promete.
+  Future<bool> criarArquivoNaPasta() async {
+    if (!VinculoPasta.vinculada) return false;
+    try {
+      final uri = await VinculoPasta.criarArquivo(arquivoPadrao);
+      if (uri == null) {
+        erroMensagem = t('erroAoCriarArquivo', [arquivoPadrao]);
+        notifyListeners();
+        return false;
+      }
+      arquivoUri = uri;
+      arquivoNome = arquivoPadrao;
+      erroMensagem = null;
+      await GruposJson.carregar();
+      await salvar();
+      notifyListeners();
+      return true;
+    } catch (e) {
+      erroMensagem = t('erroAoCriarArquivo', [e]);
+      notifyListeners();
+      return false;
+    }
+  }
+
   Future<void> _restaurarArquivo() async {
     try {
       await _restaurarArquivoInterno();

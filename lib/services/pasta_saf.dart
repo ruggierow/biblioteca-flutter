@@ -46,6 +46,16 @@ class PastaSaf {
     ).timeout(_prazo);
   }
 
+  /// Cria um `nome` VAZIO dentro da pasta e devolve o `content://` dele.
+  ///
+  /// Se o arquivo já existir, devolve o que existe — não cria um segundo.
+  static Future<String?> criarArquivo(String pasta, String nome) async {
+    return _canal.invokeMethod<String>(
+      'criarArquivoNaPasta',
+      {'pasta': pasta, 'nome': nome},
+    ).timeout(_prazo);
+  }
+
   /// O app ainda tem permissão persistente sobre a pasta?
   static Future<bool> temAcesso(String uri) async {
     return await _canal.invokeMethod<bool>('temAcessoPasta', {'uri': uri}) ??

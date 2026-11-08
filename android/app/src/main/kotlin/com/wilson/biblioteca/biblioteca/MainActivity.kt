@@ -112,6 +112,11 @@ class MainActivity : FlutterActivity() {
                 val nome = chamada.argument<String>("nome")
                 emSegundoPlano(resultado) { arquivoNaPasta(pasta, nome) }
             }
+            "criarArquivoNaPasta" -> {
+                val pasta = chamada.argument<String>("pasta")
+                val nome = chamada.argument<String>("nome")
+                emSegundoPlano(resultado) { criarArquivoNaPasta(pasta, nome) }
+            }
             "ler" -> {
                 val uri = chamada.argument<String>("uri")
                 emSegundoPlano(resultado) { ler(uri) }
@@ -323,6 +328,40 @@ class MainActivity : FlutterActivity() {
             throw ErroDoCanal("sem-permissao", "O acesso à pasta foi perdido.")
         }
         return null
+    }
+
+    /**
+     * Cria um arquivo VAZIO com este nome dentro da pasta e devolve o URI.
+     *
+     * Existe porque `arquivoNaPasta` so CONSULTA: quem vinculava uma pasta sem
+     * `biblioteca.txt` ficava num beco sem saida -- o app acusava a falta e
+     * mandava "escolher a pasta onde o arquivo esta", sem oferecer criar.
+     * No Mac e no Windows a janela de primeira abertura ja oferecia isso.
+     *
+     * Se o arquivo JA existir, devolve o que existe em vez de criar um
+     * segundo: alguns provedores aceitam nomes repetidos e renomeiam para
+     * "biblioteca (1).txt", e dai em diante o app gravaria no arquivo errado.
+     */
+    private fun criarArquivoNaPasta(pastaTexto: String?, nome: String?): String? {
+        val existente = arquivoNaPasta(pastaTexto, nome)
+        if (existente != null) return existente
+        val pasta = pastaTexto?.let(Uri::parse)
+            ?: throw ErroDoCanal("uri-invalida", "URI da pasta ausente.")
+        val alvo = nome ?: throw ErroDoCanal("nome-invalido", "Nome do arquivo ausente.")
+        val raiz = try {
+            DocumentsContract.buildDocumentUriUsingTree(
+                pasta, DocumentsContract.getTreeDocumentId(pasta)
+            )
+        } catch (e: Exception) {
+            throw ErroDoCanal("pasta-invalida", "A pasta vinculada não vale mais.")
+        }
+        return try {
+            DocumentsContract
+                .createDocument(contentResolver, raiz, "text/plain", alvo)
+                ?.toString()
+        } catch (e: SecurityException) {
+            throw ErroDoCanal("sem-permissao", "O acesso à pasta foi perdido.")
+        }
     }
 
     // -----------------------------------------------------------------------

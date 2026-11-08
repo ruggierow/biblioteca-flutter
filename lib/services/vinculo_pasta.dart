@@ -60,4 +60,11 @@ class VinculoPasta {
     if (p == null) return null;
     return PastaSaf.arquivo(p, nomeDoArquivo);
   }
+
+  /// Cria o arquivo na pasta vinculada. Null se não houver pasta vinculada.
+  static Future<String?> criarArquivo(String nomeDoArquivo) async {
+    final p = uri;
+    if (p == null) return null;
+    return PastaSaf.criarArquivo(p, nomeDoArquivo);
+  }
 }

@@ -113,6 +113,19 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
                   onTap: () => _selecionarPasta(context, store),
                   contentPadding: EdgeInsets.zero,
                 ),
+                // So aparece no caso que antes era beco sem saida: ha pasta
+                // vinculada, e nao ha `biblioteca.txt` dentro dela.
+                if (VinculoPasta.vinculada && store.arquivoNome == null) ...[
+                  const Divider(height: 1),
+                  ListTile(
+                    leading: const Icon(Icons.note_add, color: bibPrimary),
+                    title: Text(t('criarArquivoAqui')),
+                    subtitle: Text(t('criarArquivoAquiDica'),
+                        style: const TextStyle(color: bibMuted, fontSize: 12)),
+                    onTap: () => store.criarArquivoNaPasta(),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ],
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.sync, color: bibPrimary),
