@@ -131,7 +131,7 @@ class _DetalheViewState extends State<DetalheView> {
           if (livro.comentarios.isNotEmpty) ...[
             const SizedBox(height: 12),
             _Secao(
-              titulo: 'Comentários',
+              titulo: t('comentarios'),
               child: ComentariosView(
                   texto: livro.comentarios, titulo: livro.titulo),
             ),
