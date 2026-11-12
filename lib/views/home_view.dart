@@ -7,6 +7,7 @@ import '../theme.dart';
 import 'cadastro_view.dart';
 import 'paises_view.dart';
 import 'pesquisa_view.dart';
+import 'fluxo_selecionar_pasta.dart';
 import 'sincronizacao_view.dart';
 import 'scanner_view.dart';
 import '../models/idioma.dart';
@@ -93,6 +94,17 @@ class HomeView extends StatelessWidget {
                         MaterialPageRoute(
                             builder: (_) => const PesquisaView()),
                       ),
+                    ),
+                    const Divider(height: 1),
+                    // Sempre habilitado, de proposito: e a UNICA saida de
+                    // quem abriu o app pela primeira vez e ainda nao tem
+                    // arquivo. Tudo o que esta acima depende de haver um.
+                    _MenuRow(
+                      icon: Icons.folder_open,
+                      titulo: t('selecionarPasta'),
+                      habilitado: true,
+                      onTap: () => selecionarPasta(
+                          context, context.read<BibliotecaStore>()),
                     ),
                     const Divider(height: 1),
                     _MenuRow(

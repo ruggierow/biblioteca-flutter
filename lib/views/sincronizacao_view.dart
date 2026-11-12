@@ -4,6 +4,7 @@ import '../models/biblioteca_store.dart';
 import '../services/capas_dat_service.dart';
 import '../services/vinculo_pasta.dart';
 import '../theme.dart';
+import 'fluxo_selecionar_pasta.dart';
 import '../models/idioma.dart';
 
 class SincronizacaoView extends StatefulWidget {
@@ -107,25 +108,15 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
                       ? t('trocarPasta')
                       : t('selecionarPasta')),
                   subtitle: VinculoPasta.nome == null
-                      ? null
+                      ? Text(t('selecionarPastaDica'),
+                          style:
+                              const TextStyle(color: bibMuted, fontSize: 12))
                       : Text(VinculoPasta.nome!,
-                          style: const TextStyle(color: bibMuted, fontSize: 12)),
-                  onTap: () => _selecionarPasta(context, store),
+                          style:
+                              const TextStyle(color: bibMuted, fontSize: 12)),
+                  onTap: () => selecionarPasta(context, store),
                   contentPadding: EdgeInsets.zero,
                 ),
-                // So aparece no caso que antes era beco sem saida: ha pasta
-                // vinculada, e nao ha `biblioteca.txt` dentro dela.
-                if (VinculoPasta.vinculada && store.arquivoNome == null) ...[
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: const Icon(Icons.note_add, color: bibPrimary),
-                    title: Text(t('criarArquivoAqui')),
-                    subtitle: Text(t('criarArquivoAquiDica'),
-                        style: const TextStyle(color: bibMuted, fontSize: 12)),
-                    onTap: () => store.criarArquivoNaPasta(),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ],
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.sync, color: bibPrimary),
@@ -240,11 +231,6 @@ class _SincronizacaoViewState extends State<SincronizacaoView> {
   String _hora(DateTime dt) =>
       '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
-  Future<void> _selecionarPasta(BuildContext context, BibliotecaStore store) async {
-    await store.escolherEVincular();
-    await _carregarEstadoCapas();
-    if (mounted) setState(() {});
-  }
 }
 
 class _Secao extends StatelessWidget {

@@ -7,6 +7,35 @@ import '../services/vinculo_pasta.dart';
 import 'livro.dart';
 import 'idioma.dart';
 
+/// O que há na pasta recém-escolhida, ANTES de vincular qualquer arquivo.
+///
+/// Olhar antes de agir é o que permite perguntar algo que o usuário consegue
+/// responder — "achei 757 livros aqui, uso esta biblioteca?" em vez de "quer
+/// usar o arquivo?" sem ele saber o que há dentro.
+class ConteudoDaPasta {
+  /// Nome da pasta, para aparecer na pergunta.
+  final String pasta;
+
+  /// Há um `biblioteca.txt` ali?
+  final bool temArquivo;
+
+  /// Quantos livros ele tem. Só vale quando [temArquivo] e [erroDeLeitura]
+  /// é nulo.
+  final int livros;
+
+  /// Há arquivo, mas não deu para lê-lo. Nunca criar por cima neste caso:
+  /// pode ser a biblioteca de alguém, ilegível por permissão ou por estar
+  /// ainda baixando da nuvem.
+  final String? erroDeLeitura;
+
+  const ConteudoDaPasta({
+    required this.pasta,
+    required this.temArquivo,
+    this.livros = 0,
+    this.erroDeLeitura,
+  });
+}
+
 class BibliotecaStore extends ChangeNotifier {
   List<Livro> livros = [];
 
@@ -84,6 +113,37 @@ class BibliotecaStore extends ChangeNotifier {
     }
   }
 
+  /// Abre o seletor de pastas e diz o que há na pasta escolhida, SEM
+  /// vincular nada. `null` quer dizer que o usuário cancelou.
+  ///
+  /// A pasta em si JÁ fica guardada: se o usuário desistir na pergunta
+  /// seguinte, ele cai no estado "pasta vinculada, sem arquivo", de onde a
+  /// própria tela oferece escolher outra.
+  Future<ConteudoDaPasta?> escolherPastaEOlhar() async {
+    if (!await VinculoPasta.escolher()) return null;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefLegado);
+    await prefs.remove(_prefUri);
+    await prefs.remove(_prefNome);
+
+    final pasta = VinculoPasta.nome ?? t('pastaEscolhida');
+    final uri = await VinculoPasta.arquivo(arquivoPadrao);
+    if (uri == null) {
+      return ConteudoDaPasta(pasta: pasta, temArquivo: false);
+    }
+    try {
+      final quantos = parsear(await DocumentoSaf.ler(uri)).length;
+      return ConteudoDaPasta(pasta: pasta, temArquivo: true, livros: quantos);
+    } catch (e) {
+      return ConteudoDaPasta(
+          pasta: pasta, temArquivo: true, erroDeLeitura: '$e');
+    }
+  }
+
+  /// Passa a usar o `biblioteca.txt` que JÁ existe na pasta escolhida.
+  Future<bool> usarArquivoDaPasta() => _abrirNaPasta();
+
   /// Resolve o `biblioteca.txt` dentro da pasta vinculada e carrega.
   Future<bool> _abrirNaPasta() async {
     final uri = await VinculoPasta.arquivo(arquivoPadrao);
@@ -106,15 +166,24 @@ class BibliotecaStore extends ChangeNotifier {
   ///
   /// Sem isto, vincular uma pasta que ainda não tem o arquivo era um beco sem
   /// saída: [_abrirNaPasta] acusava a falta, zerava o [arquivoUri], e
-  /// [salvar] desiste quando ele é nulo — o usuário não tinha como criar o
-  /// arquivo pelo app. O Mac e o Windows já ofereciam isso na janela de
-  /// primeira abertura; o Android, não.
+  /// [salvar] desiste quando ele é nulo.
   ///
-  /// Grava a lista ATUAL, não um arquivo de zero byte. Para quem está
-  /// começando ela está vazia, e sai um arquivo válido em vez de vazio; para
-  /// quem já tinha livros à vista, "criar aqui" leva a biblioteca para a
-  /// pasta nova, que é o que a frase promete.
-  Future<bool> criarArquivoNaPasta() async {
+  /// Grava sempre um TSV válido — que para uma biblioteca vazia tem zero
+  /// byte mesmo, e isso é correto: o formato é uma linha por livro, e sem
+  /// livros não há linha. (Medido em 12/11: a pasta vazia sai com um
+  /// `biblioteca.txt` de 0 byte, e o app o relê como 0 livros.)
+  ///
+  /// O que vai dentro depende de [levarLivros], e quem decide é o usuário:
+  ///
+  ///  - `false` — começa uma biblioteca nova e vazia. A lista aberta é
+  ///    esquecida AQUI, não no disco: o arquivo de onde ela veio continua
+  ///    intacto na pasta dele.
+  ///  - `true` — leva a lista aberta para a pasta nova.
+  ///
+  /// No primeiro uso a lista está vazia e os dois dão no mesmo, então a tela
+  /// não pergunta nada. A pergunta só aparece na TROCA de pasta, que é o
+  /// único caso em que há o que perder.
+  Future<bool> criarArquivoNaPasta({bool levarLivros = false}) async {
     if (!VinculoPasta.vinculada) return false;
     try {
       final uri = await VinculoPasta.criarArquivo(arquivoPadrao);
@@ -126,6 +195,7 @@ class BibliotecaStore extends ChangeNotifier {
       arquivoUri = uri;
       arquivoNome = arquivoPadrao;
       erroMensagem = null;
+      if (!levarLivros) livros = [];
       await GruposJson.carregar();
       await salvar();
       notifyListeners();

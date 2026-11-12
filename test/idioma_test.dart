@@ -176,6 +176,18 @@ void main() {
 
   group('a tela inicial', () {
     Future<void> desenhar(WidgetTester tester) async {
+      // A janela PADRAO do teste e 800x600 logicos — deitada, e mais curta
+      // que qualquer telefone. A tela inicial nao cabe nela, e o que fica
+      // para fora NAO e construido: `find.text` nao acha, e o teste reprova
+      // por um motivo que nao existe no aparelho.
+      //
+      // Medido em 12/11/2026, ao acrescentar a linha "Selecionar pasta": a
+      // faixa do arquivo saiu da janela e dois testes cairam. O tamanho
+      // abaixo e o do Pixel 9 do emulador (1080x2424 a 2.625).
+      tester.view.physicalSize = const Size(1080, 2424);
+      tester.view.devicePixelRatio = 2.625;
+      addTearDown(tester.view.reset);
+
       await tester.pumpWidget(MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => BibliotecaStore()),
@@ -189,6 +201,7 @@ void main() {
     testWidgets('em português mostra português', (tester) async {
       await desenhar(tester);
       expect(find.text('Escanear livro'), findsOneWidget);
+      expect(find.text('Selecionar pasta'), findsOneWidget);
       expect(find.text('Sincronização'), findsOneWidget);
       expect(find.text('Nenhum arquivo vinculado'), findsOneWidget);
     });
@@ -198,12 +211,14 @@ void main() {
       fixarIdioma('en');
       await desenhar(tester);
       expect(find.text('Scan a book'), findsOneWidget);
+      expect(find.text('Select folder'), findsOneWidget);
       expect(find.text('Sync'), findsOneWidget);
       expect(find.text('No file linked'), findsOneWidget);
 
       // O contrário importa tanto quanto: um rótulo esquecido ficaria em
       // português no meio da tela em inglês, e o teste de cima não veria.
       expect(find.text('Escanear livro'), findsNothing);
+      expect(find.text('Selecionar pasta'), findsNothing);
       expect(find.text('Sincronização'), findsNothing);
       expect(find.text('Nenhum arquivo vinculado'), findsNothing);
     });

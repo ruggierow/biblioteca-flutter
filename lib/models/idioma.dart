@@ -227,6 +227,26 @@ const TEXTOS = <String, Map<String, String>>{
     'cameraIndisponivel': 'Câmera indisponível',
     'voltar': 'Voltar',
 
+    // --- selecionar pasta ---
+    'selecionarPastaDica': 'Onde o seu biblioteca.txt está — ou vai ficar',
+    'achouBiblioteca': 'Encontrei uma biblioteca nesta pasta',
+    'achouBibliotecaCorpo':
+        'A pasta "\${0}" já tem um biblioteca.txt com \${1} livro(s).',
+    'usarEstaBiblioteca': 'Usar esta biblioteca',
+    'escolherOutraPasta': 'Escolher outra pasta',
+    'criouArquivo':
+        'Criei o biblioteca.txt em "\${0}". Pode começar a cadastrar.',
+    'naoConsegueLerTitulo': 'Não consegui ler esta biblioteca',
+    'naoConsegueLer':
+        'Há um biblioteca.txt nesta pasta, mas não consegui lê-lo: \${0}',
+    'escolhaSubpasta': 'Escolha uma subpasta. O Android não deixa escolher '
+        '"Meu Drive" nem a memória do telefone.',
+    'pastaVaziaComLivros':
+        'Esta pasta está vazia. O que fazer com os \${0} livros que estão '
+        'abertos?',
+    'comecarVazia': 'Criar uma biblioteca nova e vazia',
+    'levarParaPasta': 'Levar os \${0} para esta pasta',
+
     // --- sincronizacao ---
     'sincronizacao': 'Sincronização',
     'nenhumaFotoNova': 'Nenhuma foto nova encontrada.',
@@ -263,8 +283,6 @@ const TEXTOS = <String, Map<String, String>>{
     'pastaEscolhida': 'escolhida',
     'semArquivoNaPasta': 'Não há um \${0} na pasta "\${1}". '
         'Escolha a pasta onde o arquivo está.',
-    'criarArquivoAqui': 'Criar biblioteca.txt nesta pasta',
-    'criarArquivoAquiDica': 'A pasta ainda não tem um. O app cria o arquivo e passa a gravar nele.',
     'erroAoCriarArquivo': 'Não foi possível criar o arquivo nesta pasta: \${0}',
     'naoFoiPossivelCarregar': 'Não foi possível carregar o arquivo vinculado. '
         'Toque em Selecionar arquivo para vinculá-lo de novo.',
@@ -401,6 +419,26 @@ const TEXTOS = <String, Map<String, String>>{
     'cameraIndisponivel': 'Camera unavailable',
     'voltar': 'Back',
 
+    // --- selecionar pasta ---
+    'selecionarPastaDica': 'Where your biblioteca.txt is — or will be',
+    'achouBiblioteca': 'Found a library in this folder',
+    'achouBibliotecaCorpo':
+        'The folder "\${0}" already has a biblioteca.txt with \${1} book(s).',
+    'usarEstaBiblioteca': 'Use this library',
+    'escolherOutraPasta': 'Choose another folder',
+    'criouArquivo':
+        'Created biblioteca.txt in "\${0}". You can start adding books.',
+    'naoConsegueLerTitulo': 'This library could not be read',
+    'naoConsegueLer':
+        'There is a biblioteca.txt in this folder, but it could not be read: \${0}',
+    'escolhaSubpasta': 'Choose a subfolder. Android does not allow picking '
+        '"My Drive" or the phone\'s storage.',
+    'pastaVaziaComLivros':
+        'This folder is empty. What should happen to the \${0} books you have '
+        'open?',
+    'comecarVazia': 'Start a new, empty library',
+    'levarParaPasta': 'Move the \${0} here',
+
     // --- sincronizacao ---
     'sincronizacao': 'Sync',
     'nenhumaFotoNova': 'No new photos found.',
@@ -437,8 +475,6 @@ const TEXTOS = <String, Map<String, String>>{
     'pastaEscolhida': 'the one you chose',
     'semArquivoNaPasta': 'There is no \${0} in the "\${1}" folder. '
         'Choose the folder where the file is.',
-    'criarArquivoAqui': 'Create biblioteca.txt in this folder',
-    'criarArquivoAquiDica': 'This folder does not have one yet. The app creates it and writes there from now on.',
     'erroAoCriarArquivo': 'The file could not be created in this folder: \${0}',
     'naoFoiPossivelCarregar': 'The linked file could not be loaded. '
         'Tap Select file to link it again.',
