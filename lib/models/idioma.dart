@@ -449,7 +449,11 @@ const TEXTOS = <String, Map<String, String>>{
     'livrosCarregadosRotulo': 'Books loaded',
     'acoes': 'Actions',
     'trocarPasta': 'Change folder',
-    'selecionarPasta': 'Select folder',
+    // "Choose folder", nao "Select folder": e o MESMO botao do iPhone, do Mac
+    // e do Windows, e em 12/11/2026 este era o unico dos quatro que dizia outra
+    // coisa em ingles. Achado olhando a tela para a figura do manual, nao por
+    // teste -- a mesma familia dos seis rotulos de 07/11.
+    'selecionarPasta': 'Choose folder',
     'recarregarArquivo': 'Reload file',
     'fotosDeCapa': 'Cover photos',
     'semDatNaPasta': 'There is no biblioteca.dat in this folder. That is the '
@@ -464,7 +468,7 @@ const TEXTOS = <String, Map<String, String>>{
         'a Google Drive folder and wait for it to sync.',
     'passoDrive2': 'In the Google Drive app on Android, find that folder, tap '
         '⋮ and choose "Make available offline".',
-    'passoDrive3': 'Here in Sync, tap "Select folder", go to Drive in the side '
+    'passoDrive3': 'Here in Sync, tap "Choose folder", go to Drive in the side '
         'menu and pick the folder. Android will not let you pick "My Drive" '
         'itself: it has to be a folder inside it.',
     'passoDrive4': 'Before editing, tap "Reload" if you changed the data on '
@@ -479,7 +483,7 @@ const TEXTOS = <String, Map<String, String>>{
     'naoFoiPossivelCarregar': 'The linked file could not be loaded. '
         'Tap Select file to link it again.',
     'agoraVinculaPasta': 'Biblioteca now links the WHOLE folder, not each '
-        'file. Tap Select folder and choose the folder where biblioteca.txt '
+        'file. Tap Choose folder and choose the folder where biblioteca.txt '
         'is — biblioteca.dat comes with it.',
     'erroAoCarregar': 'Could not load: \${0}',
     'erroAoSalvar': 'Could not save: \${0}',

@@ -211,7 +211,7 @@ void main() {
       fixarIdioma('en');
       await desenhar(tester);
       expect(find.text('Scan a book'), findsOneWidget);
-      expect(find.text('Select folder'), findsOneWidget);
+      expect(find.text('Choose folder'), findsOneWidget);
       expect(find.text('Sync'), findsOneWidget);
       expect(find.text('No file linked'), findsOneWidget);
 
